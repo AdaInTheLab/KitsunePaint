@@ -1,5 +1,5 @@
 import JSZip from 'jszip'
-import type { PaintEntry, PackConfig } from '../types'
+import type { PackConfig } from '../types'
 
 function sanitizeId(name: string): string {
   return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
