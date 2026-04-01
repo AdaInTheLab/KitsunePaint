@@ -130,8 +130,6 @@ export default function LandingPage() {
       </nav>
 
       <main className="relative z-10 flex flex-col items-center justify-center min-h-[85vh] px-6 text-center">
-
-        {/* Gemini hero image */}
         <div className={`mb-6 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           style={{ filter: 'drop-shadow(0 0 60px rgba(251,146,60,0.35))' }}>
           <img src="/kitsune-paint-hero.png" alt="KitsunePaint" className="w-64 h-64 md:w-80 md:h-80 object-contain" />
@@ -170,6 +168,28 @@ export default function LandingPage() {
         </p>
       </main>
 
+      {/* Screenshots */}
+      <section className={`relative z-10 py-16 px-6 transition-all duration-1000 delay-600 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="max-w-5xl mx-auto flex flex-col gap-6">
+          <p className="text-center text-xs tracking-[0.3em] uppercase text-zinc-500 font-medium">See it in action</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <div className="rounded-xl overflow-hidden border border-zinc-800 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
+                <img src="/screenshot-paint-menu.png" alt="Custom paints in the 7D2D paint menu" className="w-full object-cover" />
+              </div>
+              <p className="text-xs text-zinc-600 text-center">Custom paints show up directly in the game paint menu</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="rounded-xl overflow-hidden border border-zinc-800 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
+                <img src="/screenshot-ingame-wall.png" alt="Custom texture rendered on a wall in 7D2D" className="w-full object-cover" />
+              </div>
+              <p className="text-xs text-zinc-600 text-center">Full PBR rendering with normal maps — in a zombie survival game</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
       <section className={`relative z-10 border-t border-zinc-800/60 transition-all duration-1000 delay-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
         <div className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-12">
           <div className="flex flex-col gap-3">

@@ -1,6 +1,11 @@
 Options -MultiViews
 RewriteEngine On
 RewriteBase /
+
+# Let static files through
+RewriteRule \.(png|jpg|jpeg|gif|ico|svg|css|js|woff|woff2|ttf|webp)$ - [L]
+
+# SPA fallback
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.html [L]

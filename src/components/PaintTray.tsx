@@ -40,8 +40,9 @@ export function PaintTray({ paints, onRemove, onSelect, selectedId }: PaintTrayP
                   className="w-full h-full"
                   style={{
                     backgroundImage: `url(${paint.previewUrl})`,
-                    backgroundRepeat: 'repeat',
-                    backgroundSize: '50% 50%',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
                   }}
                 />
               )}
