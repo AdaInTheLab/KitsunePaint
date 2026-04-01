@@ -10,13 +10,15 @@ function generatePaintingXml(config: PackConfig): string {
 
   const entries = config.paints.map((paint) => {
     const paintId = `${packId}_${sanitizeId(paint.name)}`
+    const texName = `txName_${paintId}`
     const filename = `${sanitizeId(paint.name)}_diffuse.png`
+    const group = `txGroup${paint.group.charAt(0).toUpperCase() + paint.group.slice(1)}`
 
-    return `  <opaque id="${paintId}" texture="tx_${paintId}" x="0" y="0" w="${paint.tilingX}" h="${paint.tilingY}" blockw="${paint.tilingX}" blockh="${paint.tilingY}">
+    return `  <opaque id="${paintId}" name="${texName}" x="0" y="0" w="1" h="1" blockw="1" blockh="1">
     <property name="Diffuse" value="#@modfolder:Resources/Atlas.unity3d?assets/${filename}"/>
     <property name="PaintCost" value="1"/>
     <property name="Hidden" value="false"/>
-    <property name="Group" value="txGroup${paint.group.charAt(0).toUpperCase() + paint.group.slice(1)}"/>
+    <property name="Group" value="${group}"/>
     <property name="SortIndex" value="255"/>
   </opaque>`
   }).join('\n')
@@ -24,6 +26,18 @@ function generatePaintingXml(config: PackConfig): string {
   return `<configs><append xpath="/paints">
 ${entries}
 </append></configs>`
+}
+
+function generateLocalization(config: PackConfig): string {
+  const packId = sanitizeId(config.packName)
+  const header = 'Key,File,Type,UsedInMainMenu,NoTranslate,english'
+  const rows = config.paints.map((paint) => {
+    const paintId = `${packId}_${sanitizeId(paint.name)}`
+    const texName = `txName_${paintId}`
+    const group = `txGroup${paint.group.charAt(0).toUpperCase() + paint.group.slice(1)}`
+    return `${texName},painting,${group},,,${paint.name}`
+  })
+  return [header, ...rows].join('\n')
 }
 
 function generateModInfoXml(config: PackConfig): string {
@@ -52,12 +66,12 @@ ${paintList}
 1. Install OCBCustomTextures: https://www.nexusmods.com/7daystodie/mods/2788
 2. Disable EAC on server and client
 3. Drop this folder into your 7 Days to Die Mods/ directory
-4. Launch the game
+4. Run scripts/build_bundle.py on the Resources/ folder to generate Atlas.unity3d
+5. Launch the game
 
-## Notes
-- Textures are included as PNG source files
-- A Unity asset bundle (Atlas.unity3d) must be built from these PNGs using OCBCustomTextures workflow
-- See: https://github.com/OCB7D2D/OcbCustomTextures
+## Requirements
+- pip install UnityPy Pillow
+- python scripts/build_bundle.py "<path_to_modlet>/Resources"
 `
 }
 
@@ -68,16 +82,11 @@ export async function buildModletZip(config: PackConfig): Promise<Blob> {
   const resources = root.folder('Resources')!
   const configFolder = root.folder('Config')!
 
-  // ModInfo.xml
   root.file('ModInfo.xml', generateModInfoXml(config))
-
-  // README
   root.file('README.md', generateReadme(config))
-
-  // painting.xml
   configFolder.file('painting.xml', generatePaintingXml(config))
+  configFolder.file('Localization.txt', generateLocalization(config))
 
-  // Texture files
   for (const paint of config.paints) {
     const filename = `${sanitizeId(paint.name)}_diffuse.png`
     const arrayBuffer = await paint.textures.diffuse.arrayBuffer()
