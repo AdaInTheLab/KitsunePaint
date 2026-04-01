@@ -2,37 +2,59 @@
 
 <p align="center"><img src="public/kitsune-paint-hero.png" width="300" height="300" alt="KitsunePaint" /></p>
 
-> A web-based custom paint pack creator for 7 Days to Die.
+<p align="center">
+  <strong>A web-based custom paint pack creator for 7 Days to Die.</strong><br/>
+  <a href="https://paint.kitsuneden.net">paint.kitsuneden.net</a>
+</p>
 
-Upload your textures, preview how they tile on a wall, download a ready-to-install modlet. No Unity knowledge required.
+Upload your textures, preview how they tile on a wall, download a ready-to-install modlet. No Unity installation required.
 
 ## What it does
 
-1. **Upload** — drag and drop your PNG textures (diffuse required, normal/specular optional)
-2. **Preview** — see how your texture tiles on a simulated block wall before you commit
-3. **Configure** — name your paint, pick a group, tweak tiling
-4. **Download** — get a complete `.zip` modlet ready to drop into your `Mods/` folder
+1. **Upload** — drag and drop PNG/JPG textures in Simple mode (diffuse only) or PBR mode (diffuse + normal + specular)
+2. **Preview** — see exactly how your texture tiles on a simulated block wall before you commit
+3. **Configure** — name your paint, pick a group (Masonry, Wallpaper, Tiles etc), tweak tiling
+4. **Download** — get a complete `.zip` modlet with painting.xml, Localization.txt, ModInfo.xml, and all source textures
+5. **Build bundles** — run the included Python script to generate `Atlas_XXX.unity3d` asset bundles — one per paint, scales to 20+ paints
+
+## Bundle Builder
+
+The web tool generates the modlet zip. To get textures rendering in-game you also need to run the Python bundle builder:
+
+```bash
+pip install UnityPy Pillow
+python scripts/build_bundle.py "path/to/your/modlet/Resources"
+```
+
+This generates per-paint Unity asset bundles with proper mipmap data, DXTnm normals, and unique CAB names. No Unity installation needed.
 
 ## Dependencies
 
-- [OCBCustomTextures](https://www.nexusmods.com/7daystodie/mods/2788) core mod (EAC must be off)
+- [OCBCustomTextures](https://www.nexusmods.com/7daystodie/mods/2788) v0.8.0+ — must be installed on server and client
+- EAC must be disabled on both server and client
 - 7 Days to Die V2.0+
+- Python + `pip install UnityPy Pillow` (for bundle builder only)
 
 ## Tech Stack
 
 - Vite + React + TypeScript
 - Tailwind CSS
+- JSZip (modlet packaging)
+- UnityPy + Pillow (bundle builder)
 
 ## Project Structure
 
 ```
 src/
-  components/     # Reusable UI components
-  pages/          # Route-level page components
-  hooks/          # Custom React hooks
-  types/          # TypeScript type definitions
-  utils/          # Helper functions
-  stores/         # State management
+  components/       # TextureUploader, WallPreview, PaintTray, PackMeta
+  pages/            # LandingPage, routed via App.tsx
+  types/            # TypeScript type definitions
+  utils/            # buildModlet.ts — zip generation
+scripts/
+  build_bundle.py   # Python bundle builder
+  Atlas.template.unity3d  # Template bundle for injection
+public/
+  .htaccess         # SPA routing for Apache
 ```
 
 ## Part of the Kitsune Ecosystem
