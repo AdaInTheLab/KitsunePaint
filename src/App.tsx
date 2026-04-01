@@ -6,13 +6,19 @@ import { PackMeta } from './components/PackMeta'
 import { buildModletZip } from './utils/buildModlet'
 import type { PaintEntry, PaintGroup } from './types'
 
+interface TextureFiles {
+  diffuse?: File
+  normal?: File
+  specular?: File
+}
+
 function generateId() {
   return Math.random().toString(36).slice(2, 9)
 }
 
 function App() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [currentFile, setCurrentFile] = useState<File | null>(null)
+  const [currentFiles, setCurrentFiles] = useState<TextureFiles>({})
   const [textureName, setTextureName] = useState('')
   const [textureGroup, setTextureGroup] = useState<PaintGroup>('wood')
   const [tilingX, setTilingX] = useState(4)
@@ -25,29 +31,45 @@ function App() {
   const [packAuthor, setPackAuthor] = useState('')
   const [isBuilding, setIsBuilding] = useState(false)
 
+  // Simple mode - single diffuse
   const handleTextureSelect = (file: File, url: string) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(url)
-    setCurrentFile(file)
+    setCurrentFiles({ diffuse: file })
     setTextureName(file.name.replace(/\.[^/.]+$/, '').replace(/[_\-.]/g, ' ').trim())
     setSelectedId(null)
   }
 
+  // PBR mode - multiple channels
+  const handlePBRSelect = (files: TextureFiles, url: string) => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setPreviewUrl(url)
+    setCurrentFiles(files)
+    if (files.diffuse) {
+      setTextureName(files.diffuse.name.replace(/\.[^/.]+$/, '').replace(/[_\-.basecolor]*/g, '').replace(/[_\-.]/g, ' ').trim())
+    }
+    setSelectedId(null)
+  }
+
   const handleAddToPack = () => {
-    if (!currentFile || !previewUrl) return
+    if (!currentFiles.diffuse || !previewUrl) return
     const entry: PaintEntry = {
       id: generateId(),
       name: textureName || 'Unnamed Paint',
       group: textureGroup,
       tilingX,
       tilingY,
-      textures: { diffuse: currentFile },
+      textures: {
+        diffuse: currentFiles.diffuse,
+        normal: currentFiles.normal,
+        specular: currentFiles.specular,
+      },
       previewUrl,
     }
     setPaints((prev) => [...prev, entry])
     setSelectedId(entry.id)
     setPreviewUrl(null)
-    setCurrentFile(null)
+    setCurrentFiles({})
     setTextureName('')
     setTilingX(4)
     setTilingY(4)
@@ -97,7 +119,7 @@ function App() {
     }
   }
 
-  const canAdd = !!currentFile && !!textureName.trim()
+  const canAdd = !!currentFiles.diffuse && !!textureName.trim()
   const canDownload = paints.length > 0 && !!packName.trim()
   const GROUPS: PaintGroup[] = ['wood', 'stone', 'wallpaper', 'tile', 'plaster', 'metal', 'carpet', 'custom']
 
@@ -117,7 +139,21 @@ function App() {
           <div className="flex flex-col gap-6">
             <section className="flex flex-col gap-3">
               <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-400">Texture</h2>
-              <TextureUploader onTextureSelect={handleTextureSelect} />
+              <TextureUploader
+                onTextureSelect={handleTextureSelect}
+                onPBRSelect={handlePBRSelect}
+              />
+              {/* PBR channels indicator */}
+              {(currentFiles.normal || currentFiles.specular) && (
+                <div className="flex gap-2 flex-wrap">
+                  {currentFiles.normal && (
+                    <span className="text-[10px] bg-zinc-800 text-amber-400 px-2 py-0.5 rounded-full">Normal ✓</span>
+                  )}
+                  {currentFiles.specular && (
+                    <span className="text-[10px] bg-zinc-800 text-amber-400 px-2 py-0.5 rounded-full">Specular ✓</span>
+                  )}
+                </div>
+              )}
             </section>
 
             <section className="flex flex-col gap-4">

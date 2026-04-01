@@ -2,15 +2,16 @@
 KitsunePaint Bundle Builder
 ============================
 Takes user PNG textures from a modlet's Resources/ folder and
-injects them into a template Atlas.unity3d bundle using UnityPy.
+injects them into Atlas.unity3d bundles using UnityPy.
 
+Generates one bundle per paint for unlimited scalability.
 No Unity installation required.
 
 Usage:
     python scripts/build_bundle.py <modlet_resources_dir> [template_bundle]
 
 Example:
-    python scripts/build_bundle.py "F:/72D2D-Server/Mods/cat/Resources"
+    python scripts/build_bundle.py "F:/72D2D-Server/Mods/my_pack/Resources"
 
 Requirements:
     pip install UnityPy Pillow
@@ -25,27 +26,19 @@ SCRIPT_DIR = Path(__file__).parent
 DEFAULT_TEMPLATE = SCRIPT_DIR / "Atlas.template.unity3d"
 TARGET_SIZE = (512, 512)
 
-DEFAULT_SPECULAR_COLOR = (16, 200, 0, 235)
-# DXTnm neutral normal: R=255 (always), G=128 (neutral Y), B=0 (unused), A=128 (neutral X)
 DEFAULT_NORMAL_COLOR = (255, 128, 0, 128)
+DEFAULT_SPECULAR_COLOR = (16, 200, 0, 235)
 
 FMT_DXT1 = 10
 FMT_DXT5 = 12
-MIP_COUNT = 10  # generate proper mipmaps
+MIP_COUNT = 10
 
 
 def resize_to_512(img: Image.Image) -> Image.Image:
     if img.size != TARGET_SIZE:
-        print(f"  Resizing from {img.size} to {TARGET_SIZE}")
+        print(f"    Resizing from {img.size} to {TARGET_SIZE}")
         img = img.resize(TARGET_SIZE, Image.LANCZOS)
     return img.convert("RGBA")
-
-
-def inject_texture(tex_data, img: Image.Image, name: str):
-    """Inject image with proper mipmaps."""
-    tex_data.set_image(img, mipmap_count=MIP_COUNT)
-    tex_data.m_Name = name
-    tex_data.save()
 
 
 def collect_paint_files(resources_dir: Path) -> dict:
@@ -62,26 +55,42 @@ def collect_paint_files(resources_dir: Path) -> dict:
             paint_files.setdefault(stem[:-9], {})["specular"] = f
         else:
             paint_files.setdefault(stem, {})["diffuse"] = f
-    return paint_files
+    return {k: v for k, v in paint_files.items() if "diffuse" in v}
 
 
-def build_bundle(resources_dir: Path, template_path: Path) -> Path:
-    paint_files = collect_paint_files(resources_dir)
+def rename_cab(bundle, paint_name: str) -> None:
+    """Give each bundle a unique internal CAB name to avoid Unity conflicts."""
+    cab_name = f"CAB-{paint_name}"
+    ress_name = f"CAB-{paint_name}.resS"
+    old_files = dict(bundle.files)
+    bundle.files.clear()
+    for key, val in old_files.items():
+        if key.endswith(".resS"):
+            bundle.files[ress_name] = val
+        else:
+            if hasattr(val, 'name'):
+                val.name = cab_name
+            bundle.files[cab_name] = val
 
-    if not paint_files:
-        print(f"ERROR: No PNG/JPG files found in {resources_dir}")
-        sys.exit(1)
 
-    print(f"\nPaint entries detected: {list(paint_files.keys())}")
-    print(f"Loading template bundle...")
+def build_single_bundle(
+    paint_name: str,
+    diffuse: Image.Image,
+    normal: Image.Image,
+    specular: Image.Image,
+    template_path: Path,
+    output_path: Path,
+) -> None:
     env = UnityPy.load(str(template_path))
+    bundle = env.file
+
+    rename_cab(bundle, paint_name)
 
     ab_object = next(obj for obj in env.objects if obj.type.name == "AssetBundle")
     ab_data = ab_object.parse_as_object()
     container_entries = list(ab_data.m_Container)
     tex_by_pathid = {obj.path_id: obj for obj in env.objects if obj.type.name == "Texture2D"}
 
-    # Separate slots by format
     fmt12_slots = []
     diffuse_slots = []
     for i, (path, info) in enumerate(container_entries):
@@ -96,55 +105,99 @@ def build_bundle(resources_dir: Path, template_path: Path) -> Path:
     specular_slots = [fmt12_slots[-1]] if fmt12_slots else []
     normal_slots = fmt12_slots[:-1] if len(fmt12_slots) > 1 else []
 
-    print(f"Template: {len(diffuse_slots)} diffuse, {len(normal_slots)} normal, {len(specular_slots)} specular slots")
-
-    paint_names = list(paint_files.keys())
-    if len(paint_names) > len(diffuse_slots):
-        print(f"WARN: truncating to {len(diffuse_slots)} paints")
-        paint_names = paint_names[:len(diffuse_slots)]
-
     new_container = []
 
-    # Diffuses into DXT1 slots with proper mipmaps
-    for j, paint_name in enumerate(paint_names):
-        slot_i, old_path, asset_info, path_id = diffuse_slots[j]
-        files = paint_files[paint_name]
-        img = resize_to_512(Image.open(files["diffuse"] if "diffuse" in files else next(iter(files.values()))))
-        new_path = f"assets/{paint_name}_diffuse.png"
+    if diffuse_slots:
+        slot_i, _, asset_info, path_id = diffuse_slots[0]
         tex_data = tex_by_pathid[path_id].parse_as_object()
-        inject_texture(tex_data, img, f"{paint_name}_diffuse")
-        new_container.append((slot_i, new_path, asset_info))
-        print(f"  Diffuse [{slot_i}] (mips={tex_data.m_MipCount}): -> {new_path}")
+        tex_data.set_image(diffuse, mipmap_count=MIP_COUNT)
+        tex_data.m_Name = f"{paint_name}_diffuse"
+        tex_data.save()
+        new_container.append((slot_i, f"assets/{paint_name}_diffuse.png", asset_info))
 
-    # DXTnm neutral normal with proper mipmaps
     if normal_slots:
-        slot_i, old_path, asset_info, path_id = normal_slots[0]
-        normal_img = Image.new("RGBA", TARGET_SIZE, DEFAULT_NORMAL_COLOR)
+        slot_i, _, asset_info, path_id = normal_slots[0]
         tex_data = tex_by_pathid[path_id].parse_as_object()
-        inject_texture(tex_data, normal_img, "default_normal")
-        new_container.append((slot_i, "assets/default_normal.png", asset_info))
-        print(f"  Normal [{slot_i}] (mips={tex_data.m_MipCount}): -> assets/default_normal.png")
+        tex_data.set_image(normal, mipmap_count=MIP_COUNT)
+        tex_data.m_Name = f"{paint_name}_normal"
+        tex_data.save()
+        new_container.append((slot_i, f"assets/{paint_name}_normal.png", asset_info))
 
-    # Specular with proper mipmaps
     if specular_slots:
-        slot_i, old_path, asset_info, path_id = specular_slots[0]
-        spec_img = Image.new("RGBA", TARGET_SIZE, DEFAULT_SPECULAR_COLOR)
+        slot_i, _, asset_info, path_id = specular_slots[0]
         tex_data = tex_by_pathid[path_id].parse_as_object()
-        inject_texture(tex_data, spec_img, "default_specular")
-        new_container.append((slot_i, "assets/default_specular.png", asset_info))
-        print(f"  Specular [{slot_i}] (mips={tex_data.m_MipCount}): -> assets/default_specular.png")
+        tex_data.set_image(specular, mipmap_count=MIP_COUNT)
+        tex_data.m_Name = f"{paint_name}_specular"
+        tex_data.save()
+        new_container.append((slot_i, f"assets/{paint_name}_specular.png", asset_info))
 
     new_container.sort(key=lambda x: x[0])
     ab_data.m_Container = [(path, info) for _, path, info in new_container]
+
+    # Prune preload table to only our 3 textures - removes leftover template entries
+    container_pathids = {info.asset.m_PathID for _, info in ab_data.m_Container}
+    ab_data.m_PreloadTable = [p for p in ab_data.m_PreloadTable if p.m_PathID in container_pathids]
+
     ab_data.save()
 
-    output_path = resources_dir / "Atlas.unity3d"
-    print(f"\nSaving to {output_path}...")
     with open(output_path, "wb") as f:
-        f.write(env.file.save())
+        f.write(bundle.save())
 
-    print(f"Done! ({output_path.stat().st_size / 1024:.1f} KB)")
-    return output_path
+
+def build_bundles(resources_dir: Path, template_path: Path) -> None:
+    paint_files = collect_paint_files(resources_dir)
+
+    if not paint_files:
+        print(f"ERROR: No diffuse textures found in {resources_dir}")
+        sys.exit(1)
+
+    print(f"\nFound {len(paint_files)} paint(s): {list(paint_files.keys())}")
+
+    neutral_normal = Image.new("RGBA", TARGET_SIZE, DEFAULT_NORMAL_COLOR)
+    default_specular = Image.new("RGBA", TARGET_SIZE, DEFAULT_SPECULAR_COLOR)
+
+    for old in resources_dir.glob("Atlas_*.unity3d"):
+        old.unlink()
+    old_single = resources_dir / "Atlas.unity3d"
+    if old_single.exists():
+        old_single.unlink()
+
+    for i, (paint_name, files) in enumerate(paint_files.items(), 1):
+        bundle_name = f"Atlas_{i:03d}.unity3d"
+        output_path = resources_dir / bundle_name
+
+        print(f"\n  [{i}/{len(paint_files)}] {paint_name} -> {bundle_name}")
+
+        diffuse_img = resize_to_512(Image.open(files["diffuse"]))
+        print(f"    diffuse:  {files['diffuse'].name}")
+
+        if "normal" in files:
+            normal_img = resize_to_512(Image.open(files["normal"]))
+            print(f"    normal:   {files['normal'].name}")
+        else:
+            normal_img = neutral_normal.copy()
+            print(f"    normal:   [default neutral]")
+
+        if "specular" in files:
+            specular_img = resize_to_512(Image.open(files["specular"]))
+            print(f"    specular: {files['specular'].name}")
+        else:
+            specular_img = default_specular.copy()
+            print(f"    specular: [default]")
+
+        build_single_bundle(
+            paint_name=paint_name,
+            diffuse=diffuse_img,
+            normal=normal_img,
+            specular=specular_img,
+            template_path=template_path,
+            output_path=output_path,
+        )
+
+        size_kb = output_path.stat().st_size / 1024
+        print(f"    saved {bundle_name} ({size_kb:.0f} KB)")
+
+    print(f"\n✅ Built {len(paint_files)} bundle(s) in {resources_dir}")
 
 
 def main():
@@ -166,8 +219,8 @@ def main():
     print(f"Resources: {resources_dir}")
     print(f"Template:  {template_path}")
 
-    build_bundle(resources_dir, template_path)
-    print("\n✅ Bundle ready! Restart your server and client.")
+    build_bundles(resources_dir, template_path)
+    print("\nRestart your server and client to see the new paints!")
 
 
 if __name__ == "__main__":
