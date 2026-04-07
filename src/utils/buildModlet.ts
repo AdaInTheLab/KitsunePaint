@@ -1,11 +1,11 @@
 import JSZip from 'jszip'
 import type { PackConfig } from '../types'
 
-function sanitizeId(name: string): string {
+export function sanitizeId(name: string): string {
   return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 }
 
-function generatePaintingXml(config: PackConfig): string {
+export function generatePaintingXml(config: PackConfig): string {
   const packId = sanitizeId(config.packName)
 
   const entries = config.paints.map((paint, index) => {
@@ -34,7 +34,7 @@ ${entries}
 </append></configs>`
 }
 
-function generateLocalization(config: PackConfig): string {
+export function generateLocalization(config: PackConfig): string {
   const packId = sanitizeId(config.packName)
   const header = 'Key,File,Type,UsedInMainMenu,NoTranslate,english'
   const rows = config.paints.map((paint) => {
@@ -46,7 +46,7 @@ function generateLocalization(config: PackConfig): string {
   return [header, ...rows].join('\n')
 }
 
-function generateModInfoXml(config: PackConfig): string {
+export function generateModInfoXml(config: PackConfig): string {
   const packId = sanitizeId(config.packName)
   return `<?xml version="1.0" encoding="UTF-8"?>
 <xml>
