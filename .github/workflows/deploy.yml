@@ -1,0 +1,51 @@
+name: Deploy to DreamHost VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # Navigate to deploy dir (create if first deploy)
+            DEPLOY_DIR=~/kitsunepaint
+            mkdir -p $DEPLOY_DIR
+            cd $DEPLOY_DIR
+
+            # Clone or pull latest
+            if [ -d .git ]; then
+              git pull origin main
+            else
+              git clone https://github.com/AdaInTheLab/KitsunePaint.git .
+            fi
+
+            # Install Python deps
+            python3 -m pip install --user UnityPy Pillow -q
+
+            # Install Node deps + build frontend
+            npm install --production
+            npx vite build
+
+            # Restart with PM2
+            if command -v pm2 &> /dev/null; then
+              pm2 restart kitsunepaint 2>/dev/null || pm2 start server.cjs --name kitsunepaint
+              pm2 save
+            else
+              npm install -g pm2
+              pm2 start server.cjs --name kitsunepaint
+              pm2 save
+              pm2 startup | tail -1 | bash
+            fi
+
+            echo "Deployed successfully"
