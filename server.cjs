@@ -16,6 +16,15 @@ const os = require('os')
 const app = express()
 const PORT = process.env.PORT || 3002
 
+// CORS for cross-port requests (Apache on 80/443, Express on 3002)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type')
+  if (req.method === 'OPTIONS') return res.sendStatus(200)
+  next()
+})
+
 // Serve static frontend
 app.use(express.static(path.join(__dirname, 'dist')))
 
@@ -107,6 +116,11 @@ app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
 
-app.listen(PORT, () => {
-  console.log(`KitsunePaint server running on http://localhost:${PORT}`)
-})
+// If run directly (PM2 or standalone), listen on PORT
+// If loaded by Passenger, export the app
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`KitsunePaint server running on http://localhost:${PORT}`)
+  })
+}
+module.exports = app

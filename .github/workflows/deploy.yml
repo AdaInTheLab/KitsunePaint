@@ -42,26 +42,18 @@ jobs:
             npm install
             npx vite build
 
-            # Deploy built files to Apache web root
+            # Deploy to Apache web root
             cp -rf dist/* "$WEB_ROOT/"
-            # Also copy server + scripts for the bundle API
-            cp -f server.cjs "$WEB_ROOT/"
+            cp -f app.js server.cjs "$WEB_ROOT/"
             cp -rf scripts "$WEB_ROOT/"
-            cp -f package.json "$WEB_ROOT/"
-            cp -f package-lock.json "$WEB_ROOT/"
-            # Ensure node_modules exist in web root for Express
-            cd "$WEB_ROOT"
-            npm install --production 2>/dev/null
+            cp -f package.json package-lock.json "$WEB_ROOT/"
 
-            # Restart Express with PM2
-            if command -v pm2 &> /dev/null; then
-              pm2 restart kitsunepaint 2>/dev/null || pm2 start server.cjs --name kitsunepaint
-              pm2 save
-            else
-              npm install -g pm2
-              pm2 start server.cjs --name kitsunepaint
-              pm2 save
-              pm2 startup | tail -1 | bash
-            fi
+            # Install production deps in web root (Express, multer)
+            cd "$WEB_ROOT"
+            npm install --production
+
+            # Restart Passenger (touch restart.txt signals Apache to reload the app)
+            mkdir -p tmp
+            touch tmp/restart.txt
 
             echo "Deployed successfully"
