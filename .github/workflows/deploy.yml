@@ -18,14 +18,15 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -e
+
             # Load nvm for non-interactive SSH
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-            WEB_ROOT=/home/dh_hmzudk/paint.kitsuneden.net
             BUILD_DIR=/home/dh_hmzudk/kitsunepaint-build
 
-            # Clone or pull into a separate build directory
+            # Clone or pull
             if [ -d "$BUILD_DIR/.git" ]; then
               cd "$BUILD_DIR"
               git pull origin main
@@ -38,19 +39,22 @@ jobs:
             # Install Python deps
             python3 -m pip install --user UnityPy Pillow -q
 
-            # Install all deps (including vite for build), then build
+            # Install all deps + build frontend
             npm install
             npx vite build
 
-            # Deploy built frontend to Apache web root
-            cp -rf dist/* "$WEB_ROOT/"
-
-            # Copy server files to build dir (Express runs from here)
+            # Kill old server, start fresh
+            pkill -f "node.*server.cjs" 2>/dev/null || true
+            sleep 1
             cd "$BUILD_DIR"
-            npm install --production
+            nohup node server.cjs > /home/dh_hmzudk/kitsunepaint.log 2>&1 &
+            sleep 2
 
-            # Restart Express via PM2
-            pm2 restart kitsunepaint 2>/dev/null || pm2 start server.cjs --name kitsunepaint --cwd "$BUILD_DIR"
-            pm2 save
-
-            echo "Deployed successfully"
+            # Verify server is running
+            if curl -sf http://localhost:3002/ > /dev/null; then
+              echo "✅ Deployed and verified — server responding on port 3002"
+            else
+              echo "❌ Server started but not responding"
+              tail -5 /home/dh_hmzudk/kitsunepaint.log
+              exit 1
+            fi
