@@ -43,11 +43,12 @@ jobs:
             npm install
             npx vite build
 
-            # Kill old server, start fresh
+            # Kill old server, start fresh (setsid fully detaches from SSH session)
             pkill -f "node.*server.cjs" 2>/dev/null || true
             sleep 1
             cd "$BUILD_DIR"
-            nohup node server.cjs > /home/dh_hmzudk/kitsunepaint.log 2>&1 &
+            setsid nohup node server.cjs > /home/dh_hmzudk/kitsunepaint.log 2>&1 &
+            disown
             sleep 2
 
             # Verify server is running
