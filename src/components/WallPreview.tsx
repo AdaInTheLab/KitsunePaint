@@ -29,17 +29,7 @@ export function WallPreview({ previewUrl, tilingX, tilingY }: WallPreviewProps) 
                 imageRendering: 'pixelated',
               }}
             />
-            {/* Subtle block grid overlay */}
-            <div
-              className="absolute inset-0 opacity-20"
-              style={{
-                backgroundImage: `
-                  linear-gradient(to right, #000 1px, transparent 1px),
-                  linear-gradient(to bottom, #000 1px, transparent 1px)
-                `,
-                backgroundSize: `${100 / tilingX}% ${100 / tilingY}%`,
-              }}
-            />
+
             {/* Depth vignette */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40" />
           </>

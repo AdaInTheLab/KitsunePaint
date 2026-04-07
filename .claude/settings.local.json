@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"20\\\\|999\\\\|scale\\\\|limit\" C:UsersdarabWebstormProjectsKitsunePaint/src --include=*.tsx --include=*.ts)",
+      "WebSearch",
+      "WebFetch(domain:www.nexusmods.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:7daystodie.fandom.com)",
+      "WebFetch(domain:7daystodiemods.com)",
+      "Read(//f/72D2D-Server/Data/Config/**)",
+      "Bash(ls F:/72D2D-Server/output_log_dedi*.txt)"
+    ]
+  }
+}

@@ -29,6 +29,7 @@ function AppTool() {
   const [packName, setPackName] = useState('')
   const [packAuthor, setPackAuthor] = useState('')
   const [isBuilding, setIsBuilding] = useState(false)
+  const [buildProgress, setBuildProgress] = useState('')
 
   const handleTextureSelect = (file: File, url: string) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -98,17 +99,26 @@ function AppTool() {
   const handleDownload = async () => {
     if (!canDownload) return
     setIsBuilding(true)
+    setBuildProgress('Starting...')
     try {
-      const blob = await buildModletZip({ packName, packAuthor, packVersion: '1.0.0', paints })
+      const blob = await buildModletZip(
+        { packName, packAuthor, packVersion: '1.0.0', paints },
+        (current, total, name) => setBuildProgress(`Building ${name} (${current}/${total})...`),
+      )
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `${packName.toLowerCase().replace(/\s+/g, '_')}_modlet.zip`
       a.click()
       URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Build failed:', err)
+      setBuildProgress(`Error: ${err instanceof Error ? err.message : 'Build failed'}`)
+      return
     } finally {
       setIsBuilding(false)
     }
+    setBuildProgress('')
   }
 
   const canAdd = !!currentFiles.diffuse && !!textureName.trim()
@@ -191,7 +201,7 @@ function AppTool() {
             <PackMeta packName={packName} packAuthor={packAuthor} onChange={handlePackMetaChange} />
             <button onClick={handleDownload} disabled={!canDownload || isBuilding}
               className={`w-full py-3 rounded-lg text-sm font-semibold transition-all duration-150 ${canDownload && !isBuilding ? 'bg-zinc-100 hover:bg-white text-zinc-950 cursor-pointer' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}>
-              {isBuilding ? 'Building modlet...' : canDownload ? `⬇ Download "${packName}" Modlet` : 'Add a pack name to download'}
+              {isBuilding ? buildProgress || 'Building modlet...' : canDownload ? `⬇ Download "${packName}" Modlet` : 'Add a pack name to download'}
             </button>
           </div>
         )}

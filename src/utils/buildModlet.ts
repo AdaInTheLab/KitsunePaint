@@ -77,10 +77,7 @@ ${paintList}
 1. Install OCBCustomTextures: https://www.nexusmods.com/7daystodie/mods/2788
 2. Disable EAC on server and client
 3. Drop this folder into your 7 Days to Die Mods/ directory
-4. Run the bundle builder to generate Atlas_*.unity3d files:
-   pip install UnityPy Pillow
-   python build_bundle.py Resources/
-5. Restart server and client
+4. Restart server and client
 
 ## Notes
 - One Atlas_XXX.unity3d bundle is generated per paint
@@ -89,7 +86,30 @@ ${paintList}
 `
 }
 
-export async function buildModletZip(config: PackConfig): Promise<Blob> {
+async function buildBundle(paint: PackConfig['paints'][0]): Promise<ArrayBuffer> {
+  const baseName = sanitizeId(paint.name)
+  const formData = new FormData()
+  formData.append('name', baseName)
+  formData.append('diffuse', paint.textures.diffuse, `${baseName}_diffuse.png`)
+  if (paint.textures.normal) {
+    formData.append('normal', paint.textures.normal, `${baseName}_normal.png`)
+  }
+  if (paint.textures.specular) {
+    formData.append('specular', paint.textures.specular, `${baseName}_specular.png`)
+  }
+
+  const res = await fetch('/api/build-bundle', { method: 'POST', body: formData })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(`Bundle build failed for ${paint.name}: ${err.error}`)
+  }
+  return res.arrayBuffer()
+}
+
+export async function buildModletZip(
+  config: PackConfig,
+  onProgress?: (current: number, total: number, name: string) => void,
+): Promise<Blob> {
   const zip = new JSZip()
   const packId = sanitizeId(config.packName)
   const root = zip.folder(packId)!
@@ -101,18 +121,26 @@ export async function buildModletZip(config: PackConfig): Promise<Blob> {
   configFolder.file('painting.xml', generatePaintingXml(config))
   configFolder.file('Localization.txt', generateLocalization(config))
 
-  // One folder of source textures per paint, named to match what build_bundle.py expects
-  for (const paint of config.paints) {
-    const baseName = sanitizeId(paint.name)
+  // Build .unity3d bundles via the server API
+  for (let i = 0; i < config.paints.length; i++) {
+    const paint = config.paints[i]
+    const bundleName = `Atlas_${String(i + 1).padStart(3, '0')}.unity3d`
+    onProgress?.(i + 1, config.paints.length, paint.name)
 
-    resources.file(`${baseName}_diffuse.png`, await paint.textures.diffuse.arrayBuffer())
-
-    if (paint.textures.normal) {
-      resources.file(`${baseName}_normal.png`, await paint.textures.normal.arrayBuffer())
-    }
-
-    if (paint.textures.specular) {
-      resources.file(`${baseName}_specular.png`, await paint.textures.specular.arrayBuffer())
+    try {
+      const bundleData = await buildBundle(paint)
+      resources.file(bundleName, bundleData)
+    } catch (err) {
+      console.error(`Failed to build bundle for ${paint.name}:`, err)
+      // Fall back to including raw PNG so user can run build_bundle.py manually
+      const baseName = sanitizeId(paint.name)
+      resources.file(`${baseName}_diffuse.png`, await paint.textures.diffuse.arrayBuffer())
+      if (paint.textures.normal) {
+        resources.file(`${baseName}_normal.png`, await paint.textures.normal.arrayBuffer())
+      }
+      if (paint.textures.specular) {
+        resources.file(`${baseName}_specular.png`, await paint.textures.specular.arrayBuffer())
+      }
     }
   }
 
