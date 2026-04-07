@@ -38,8 +38,8 @@ jobs:
             # Install Python deps
             python3 -m pip install --user UnityPy Pillow -q
 
-            # Install Node deps + build frontend
-            npm install --production
+            # Install all deps (including vite for build), then build
+            npm install
             npx vite build
 
             # Deploy built files to Apache web root
