@@ -18,15 +18,17 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # Navigate to deploy dir
-            DEPLOY_DIR=/home/dh_hmzudk/paint.kitsuneden.net
-            cd $DEPLOY_DIR
+            WEB_ROOT=/home/dh_hmzudk/paint.kitsuneden.net
+            BUILD_DIR=/home/dh_hmzudk/kitsunepaint-build
 
-            # Clone or pull latest
-            if [ -d .git ]; then
+            # Clone or pull into a separate build directory
+            if [ -d "$BUILD_DIR/.git" ]; then
+              cd "$BUILD_DIR"
               git pull origin main
             else
-              git clone https://github.com/AdaInTheLab/KitsunePaint.git .
+              rm -rf "$BUILD_DIR"
+              git clone https://github.com/AdaInTheLab/KitsunePaint.git "$BUILD_DIR"
+              cd "$BUILD_DIR"
             fi
 
             # Install Python deps
@@ -36,10 +38,18 @@ jobs:
             npm install --production
             npx vite build
 
-            # Copy built files to root for Apache
-            cp -rf dist/* .
+            # Deploy built files to Apache web root
+            cp -rf dist/* "$WEB_ROOT/"
+            # Also copy server + scripts for the bundle API
+            cp -f server.cjs "$WEB_ROOT/"
+            cp -rf scripts "$WEB_ROOT/"
+            cp -f package.json "$WEB_ROOT/"
+            cp -f package-lock.json "$WEB_ROOT/"
+            # Ensure node_modules exist in web root for Express
+            cd "$WEB_ROOT"
+            npm install --production 2>/dev/null
 
-            # Restart with PM2
+            # Restart Express with PM2
             if command -v pm2 &> /dev/null; then
               pm2 restart kitsunepaint 2>/dev/null || pm2 start server.cjs --name kitsunepaint
               pm2 save
