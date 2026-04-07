@@ -36,6 +36,9 @@ jobs:
             npm install --production
             npx vite build
 
+            # Copy built files to root for Apache
+            cp -rf dist/* .
+
             # Restart with PM2
             if command -v pm2 &> /dev/null; then
               pm2 restart kitsunepaint 2>/dev/null || pm2 start server.cjs --name kitsunepaint
