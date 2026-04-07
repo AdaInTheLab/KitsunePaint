@@ -82,7 +82,7 @@ ${paintList}
 ## Notes
 - One Atlas_XXX.unity3d bundle is generated per paint
 - Normal and specular maps use defaults if not provided
-- Supports up to 999 paints
+- Vanilla supports up to 255 paints. With PaintUnlocked, supports up to 1023
 `
 }
 
