@@ -121,7 +121,7 @@ export default function LandingPage() {
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 border-b border-zinc-800/50">
         <div className="flex items-center gap-2">
           <span className="text-xl">🦊</span>
-          <span className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">KitsunePaint</span>
+          <span className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">KitsunePaint <span className="text-zinc-600 font-normal">v{__APP_VERSION__}</span></span>
         </div>
         <div className="flex items-center gap-6 text-xs text-zinc-500 tracking-wider uppercase">
           <a href="https://github.com/AdaInTheLab/KitsunePaint" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">GitHub</a>
