@@ -18,6 +18,12 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            # Load nvm/node into PATH (DreamHost non-interactive SSH)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            # Also try common DreamHost node paths
+            export PATH="$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node/ 2>/dev/null | tail -1)/bin:$HOME/local/bin:$HOME/bin:$PATH"
+
             WEB_ROOT=/home/dh_hmzudk/paint.kitsuneden.net
             BUILD_DIR=/home/dh_hmzudk/kitsunepaint-build
 
