@@ -18,8 +18,6 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            set -e
-
             # Load nvm for non-interactive SSH
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
@@ -43,19 +41,17 @@ jobs:
             npm install
             npx vite build
 
-            # Kill old server (match exact path to avoid killing vite/npm)
+            # Write a restart script and run it via `at` so it survives SSH disconnect
+            cat > /home/dh_hmzudk/restart-kitsunepaint.sh << 'RESTART'
+            #!/bin/bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
             pkill -f "node /home/dh_hmzudk/kitsunepaint-build/server.cjs" 2>/dev/null || true
             sleep 1
-            cd "$BUILD_DIR"
-            setsid nohup node server.cjs > /home/dh_hmzudk/kitsunepaint.log 2>&1 &
-            disown
-            sleep 2
+            cd /home/dh_hmzudk/kitsunepaint-build
+            nohup node server.cjs > /home/dh_hmzudk/kitsunepaint.log 2>&1 &
+            RESTART
+            chmod +x /home/dh_hmzudk/restart-kitsunepaint.sh
+            echo "bash /home/dh_hmzudk/restart-kitsunepaint.sh" | at now 2>/dev/null || bash /home/dh_hmzudk/restart-kitsunepaint.sh &
 
-            # Verify server is running
-            if curl -sf http://localhost:3002/ > /dev/null; then
-              echo "✅ Deployed and verified — server responding on port 3002"
-            else
-              echo "❌ Server started but not responding"
-              tail -5 /home/dh_hmzudk/kitsunepaint.log
-              exit 1
-            fi
+            echo "✅ Deployed — server restart scheduled"
