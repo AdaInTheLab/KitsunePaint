@@ -42,18 +42,15 @@ jobs:
             npm install
             npx vite build
 
-            # Deploy to Apache web root
+            # Deploy built frontend to Apache web root
             cp -rf dist/* "$WEB_ROOT/"
-            cp -f app.js server.cjs "$WEB_ROOT/"
-            cp -rf scripts "$WEB_ROOT/"
-            cp -f package.json package-lock.json "$WEB_ROOT/"
 
-            # Install production deps in web root (Express, multer)
-            cd "$WEB_ROOT"
+            # Copy server files to build dir (Express runs from here)
+            cd "$BUILD_DIR"
             npm install --production
 
-            # Restart Passenger (touch restart.txt signals Apache to reload the app)
-            mkdir -p tmp
-            touch tmp/restart.txt
+            # Restart Express via PM2
+            pm2 restart kitsunepaint 2>/dev/null || pm2 start server.cjs --name kitsunepaint --cwd "$BUILD_DIR"
+            pm2 save
 
             echo "Deployed successfully"

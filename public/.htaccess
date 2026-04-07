@@ -1,4 +1,11 @@
-PassengerEnabled on
-PassengerAppType node
-PassengerStartupFile app.js
-PassengerNodejs /home/dh_hmzudk/.nvm/versions/node/v24.14.1/bin/node
+Options -MultiViews
+RewriteEngine On
+RewriteBase /
+
+# Let static files through
+RewriteRule \.(png|jpg|jpeg|gif|ico|svg|css|js|woff|woff2|ttf|webp)$ - [L]
+
+# SPA fallback
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
