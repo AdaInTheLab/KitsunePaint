@@ -18,9 +18,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # Navigate to deploy dir (create if first deploy)
-            DEPLOY_DIR=~/kitsunepaint
-            mkdir -p $DEPLOY_DIR
+            # Navigate to deploy dir
+            DEPLOY_DIR=/home/dh_hmzudk/paint.kitsuneden.net
             cd $DEPLOY_DIR
 
             # Clone or pull latest
