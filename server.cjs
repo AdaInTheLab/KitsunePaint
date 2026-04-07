@@ -72,7 +72,7 @@ app.post('/api/build-bundle', upload.fields([
     const templatePath = path.join(__dirname, 'scripts', 'Atlas.template.unity3d')
 
     await new Promise((resolve, reject) => {
-      execFile('python', ['-X', 'utf8', scriptPath, tempDir, templatePath], {
+      execFile('python3', ['-X', 'utf8', scriptPath, tempDir, templatePath], {
         timeout: 30000,
       }, (error, stdout, stderr) => {
         if (error) {
