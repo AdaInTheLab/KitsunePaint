@@ -2,6 +2,9 @@ Options -MultiViews
 RewriteEngine On
 RewriteBase /
 
+# Proxy API requests to Express server
+RewriteRule ^api/(.*) http://localhost:3002/api/$1 [P,L]
+
 # Let static files through
 RewriteRule \.(png|jpg|jpeg|gif|ico|svg|css|js|woff|woff2|ttf|webp)$ - [L]
 
