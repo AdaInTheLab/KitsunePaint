@@ -27,6 +27,7 @@ jobs:
             # Clone or pull
             if [ -d "$BUILD_DIR/.git" ]; then
               cd "$BUILD_DIR"
+              git checkout -- .
               git pull origin main
             else
               rm -rf "$BUILD_DIR"
@@ -41,17 +42,9 @@ jobs:
             npm install
             npx vite build
 
-            # Write a restart script and run it via `at` so it survives SSH disconnect
-            cat > /home/dh_hmzudk/restart-kitsunepaint.sh << 'RESTART'
-            #!/bin/bash
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-            pkill -f "node /home/dh_hmzudk/kitsunepaint-build/server.cjs" 2>/dev/null || true
-            sleep 1
-            cd /home/dh_hmzudk/kitsunepaint-build
-            nohup node server.cjs > /home/dh_hmzudk/kitsunepaint.log 2>&1 &
-            RESTART
-            chmod +x /home/dh_hmzudk/restart-kitsunepaint.sh
-            echo "bash /home/dh_hmzudk/restart-kitsunepaint.sh" | at now 2>/dev/null || bash /home/dh_hmzudk/restart-kitsunepaint.sh &
+            # Restart via systemd (auto-restarts on crash, survives SSH disconnect)
+            systemctl --user restart kitsunepaint
+            sleep 2
+            systemctl --user is-active kitsunepaint
 
-            echo "✅ Deployed — server restart scheduled"
+            echo "✅ Deployed and server restarted"
