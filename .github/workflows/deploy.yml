@@ -68,7 +68,12 @@ jobs:
               sleep 3
               for i in 1 2 3; do
                 if curl -sf http://localhost:3002 > /dev/null; then
-                  echo "✅ Deployed — server running (health check passed)"
+                  PROC_COUNT=$(pgrep -cf "node.*server.cjs" || echo 0)
+                  echo "✅ Deployed — health check passed, $PROC_COUNT server process(es)"
+                  if [ "$PROC_COUNT" -ne 1 ]; then
+                    echo "⚠️  Expected 1 process, found $PROC_COUNT"
+                    exit 1
+                  fi
                   exit 0
                 fi
                 echo "⚠️  Health check attempt $i failed, retrying..."
