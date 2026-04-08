@@ -62,36 +62,19 @@ jobs:
             npm install
             npx vite build
 
-            # Stop cleanly via systemd, then kill any rogues it doesn't manage
-            systemctl --user stop kitsunepaint 2>/dev/null || true
-            sleep 1
-            pkill -f "node.*server.cjs" 2>/dev/null || true
-            sleep 1
-
-            # Start fresh
-            systemctl --user start kitsunepaint
-            sleep 2
-
-            # Health check with retry
-            for i in 1 2 3; do
-              if curl -sf http://localhost:3002 > /dev/null; then
-                break
-              fi
-              echo "⚠️  Health check attempt $i failed, retrying..."
+            # Restart server and verify — run in a subshell to isolate signals
+            bash -c '
               systemctl --user restart kitsunepaint
               sleep 3
-            done
-            curl -sf http://localhost:3002 > /dev/null || { echo "❌ Health check failed after 3 attempts"; exit 1; }
-
-            # Verify exactly one server process — clean up extras if needed
-            PROC_COUNT=$(pgrep -cf "node.*server.cjs" || echo 0)
-            if [ "$PROC_COUNT" -gt 1 ]; then
-              echo "⚠️  Found $PROC_COUNT processes, cleaning up..."
-              systemctl --user stop kitsunepaint 2>/dev/null || true
-              pkill -f "node.*server.cjs" 2>/dev/null || true
-              sleep 1
-              systemctl --user start kitsunepaint
-              sleep 2
-            fi
-
-            echo "✅ Deployed — server running (health check passed)"
+              for i in 1 2 3; do
+                if curl -sf http://localhost:3002 > /dev/null; then
+                  echo "✅ Deployed — server running (health check passed)"
+                  exit 0
+                fi
+                echo "⚠️  Health check attempt $i failed, retrying..."
+                systemctl --user restart kitsunepaint
+                sleep 3
+              done
+              echo "❌ Health check failed after 3 attempts"
+              exit 1
+            '
