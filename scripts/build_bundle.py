@@ -31,7 +31,7 @@ DEFAULT_SPECULAR_COLOR = (16, 200, 0, 235)
 
 FMT_DXT1 = 10
 FMT_DXT5 = 12
-MIP_COUNT = 10
+MIP_COUNT = 8
 
 
 def resize_to_512(img: Image.Image) -> Image.Image:
