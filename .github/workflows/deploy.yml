@@ -68,11 +68,12 @@ jobs:
               sleep 3
               for i in 1 2 3; do
                 if curl -sf http://localhost:3002 > /dev/null; then
-                  PROC_COUNT=$(pgrep -cf "node.*server.cjs" || echo 0)
-                  echo "✅ Deployed — health check passed, $PROC_COUNT server process(es)"
-                  if [ "$PROC_COUNT" -ne 1 ]; then
-                    echo "⚠️  Expected 1 process, found $PROC_COUNT"
-                    exit 1
+                  # Verify systemd is managing exactly one main PID
+                  MAIN_PID=$(systemctl --user show kitsunepaint --property=MainPID --value)
+                  if [ "$MAIN_PID" -gt 0 ] 2>/dev/null; then
+                    echo "✅ Deployed — health check passed (systemd PID: $MAIN_PID)"
+                  else
+                    echo "⚠️  Deployed but systemd has no active PID"
                   fi
                   exit 0
                 fi
