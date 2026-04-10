@@ -51,7 +51,7 @@ jobs:
               git pull origin main
             else
               rm -rf "$BUILD_DIR"
-              git clone https://github.com/AdaInTheLab/KitsunePaint.git "$BUILD_DIR"
+              git clone https://github.com/Kitsune-Den/KitsunePaint.git "$BUILD_DIR"
               cd "$BUILD_DIR"
             fi
 

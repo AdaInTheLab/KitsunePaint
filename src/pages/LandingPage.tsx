@@ -124,7 +124,7 @@ export default function LandingPage() {
           <span className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">KitsunePaint <span className="text-zinc-600 font-normal">v{__APP_VERSION__}</span></span>
         </div>
         <div className="flex items-center gap-6 text-xs text-zinc-500 tracking-wider uppercase">
-          <a href="https://github.com/AdaInTheLab/KitsunePaint" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">GitHub</a>
+          <a href="https://github.com/Kitsune-Den/KitsunePaint" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">GitHub</a>
           <a href="https://www.nexusmods.com/7daystodie/mods/2788" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">OCBCustomTextures</a>
         </div>
       </nav>
@@ -157,7 +157,7 @@ export default function LandingPage() {
             Open the Tool
             <span className="ml-2 group-hover:translate-x-1 inline-block transition-transform">→</span>
           </a>
-          <a href="https://github.com/AdaInTheLab/KitsunePaint" target="_blank" rel="noopener noreferrer"
+          <a href="https://github.com/Kitsune-Den/KitsunePaint" target="_blank" rel="noopener noreferrer"
             className="px-8 py-4 border border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-200 text-sm font-medium tracking-widest uppercase rounded-lg transition-all duration-200">
             View Source
           </a>
