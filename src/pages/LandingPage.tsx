@@ -207,6 +207,72 @@ export default function LandingPage() {
             <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-200">Bundle Builder</h3>
             <p className="text-sm text-zinc-500 leading-relaxed">Run the included Python script on your Resources folder. It generates the Unity asset bundles automatically. No Unity install required.</p>
           </div>
+          <div className="flex flex-col gap-3">
+            <div className="text-2xl">🔪</div>
+            <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-200">Texture Slicing</h3>
+            <p className="text-sm text-zinc-500 leading-relaxed">Upload a large texture and split it across multiple blocks. Set the Block Span to 2x2, 3x3, or up to 4x4 — each tile becomes its own paint, ready to assemble in-game.</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="text-2xl">🤝</div>
+            <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-200">Works with Other Packs</h3>
+            <p className="text-sm text-zinc-500 leading-relaxed">Tested alongside Pyro Paints and CK Textures. All OCBCustomTextures-based packs coexist as separate modlets — no conflicts. Just mind the 255 paint cap.</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="text-2xl">🔓</div>
+            <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-200">Break the 255 Limit</h3>
+            <p className="text-sm text-zinc-500 leading-relaxed">Hit the paint cap? <a href="https://www.nexusmods.com/7daystodie/mods/TODO" className="text-amber-500 hover:text-amber-400 transition-colors">KitsunePaintUnlocked</a> raises the limit to 1023 paints — the first mod to fully break the vanilla ceiling. Pair it with KitsunePaint for unlimited creativity.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className={`relative z-10 border-t border-zinc-800/60 transition-all duration-1000 delay-800 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="max-w-3xl mx-auto px-6 py-16 flex flex-col gap-8">
+          <p className="text-center text-xs tracking-[0.3em] uppercase text-zinc-500 font-medium">Frequently Asked Questions</p>
+          <div className="flex flex-col gap-3">
+            {[
+              {
+                q: 'Does this work with Pyro Paints / CK Textures / other paint mods?',
+                a: 'Yes. We tested KitsunePaint alongside Pyro Paints (77 paints) and both load cleanly together. All OCBCustomTextures-based packs coexist as separate modlets with no conflicts.',
+              },
+              {
+                q: 'How many paints can I add?',
+                a: 'The game has a hard cap of 255 total paints. Vanilla uses 154, so you have 101 slots for mods. If you also run Pyro Paints (77), that leaves 24. Plan your packs accordingly.',
+              },
+              {
+                q: 'I see red "Graphics.CopyTexture" errors in the F1 console. Is that bad?',
+                a: "Those mipmap warnings come from OCBCustomTextures' built-in textures, not from KitsunePaint bundles. They're purely cosmetic — your paints work fine. Every paint mod produces them.",
+              },
+              {
+                q: 'My texture glows in the dark. What gives?',
+                a: "You likely uploaded a PBR roughness map in the specular slot. 7D2D uses a specular workflow, not PBR roughness. Either invert your roughness map in an image editor, or leave the specular slot empty and KitsunePaint will generate a neutral default.",
+              },
+              {
+                q: 'Can I add more PBR channels like AO, height, or emissive?',
+                a: "No — 7D2D only supports three texture channels: Diffuse, Normal, and Specular. That's a hard limit in the game's shader. The specular map is a packed RGBA texture, so there's some flexibility within that one map, but you can't add additional channels.",
+              },
+              {
+                q: 'What does the Block Span / texture slicing feature do?',
+                a: 'Upload a larger texture (e.g. 1024x1024) and set Block Span to 2x2. KitsunePaint slices it into 4 separate tile paints that you can arrange on adjacent blocks in-game to reconstruct the full image. Works up to 4x4 (16 tiles). The grid size is auto-suggested based on your image dimensions.',
+              },
+              {
+                q: 'How do I update OCBCustomTextures?',
+                a: "Delete your old OcbCustomTextures folder from Mods/ before installing the new version. Don't just overwrite — leftover files from previous versions can cause issues.",
+              },
+              {
+                q: 'Does this work with crossplay?',
+                a: 'Yes. As long as all clients and the server have the same mods installed with EAC off, custom paints work across platforms.',
+              },
+            ].map(({ q, a }) => (
+              <details key={q} className="group border border-zinc-800 rounded-lg overflow-hidden">
+                <summary className="flex items-center justify-between px-5 py-4 cursor-pointer text-sm font-medium text-zinc-200 hover:text-amber-400 transition-colors select-none">
+                  {q}
+                  <span className="text-zinc-600 group-open:rotate-45 transition-transform text-lg ml-4">+</span>
+                </summary>
+                <div className="px-5 pb-4 text-sm text-zinc-500 leading-relaxed">{a}</div>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
