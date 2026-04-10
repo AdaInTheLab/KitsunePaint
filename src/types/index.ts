@@ -10,6 +10,8 @@ export interface PaintEntry {
   group: PaintGroup
   tilingX: number
   tilingY: number
+  gridWidth: number
+  gridHeight: number
   textures: TextureLayer
   previewUrl?: string
 }

@@ -24,6 +24,8 @@ function AppTool() {
   const [textureGroup, setTextureGroup] = useState<PaintGroup>('wood')
   const [tilingX, setTilingX] = useState(4)
   const [tilingY, setTilingY] = useState(4)
+  const [gridWidth, setGridWidth] = useState(1)
+  const [gridHeight, setGridHeight] = useState(1)
   const [paints, setPaints] = useState<PaintEntry[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [packName, setPackName] = useState('')
@@ -31,12 +33,24 @@ function AppTool() {
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildProgress, setBuildProgress] = useState('')
 
+  const suggestGrid = (url: string) => {
+    const img = new window.Image()
+    img.onload = () => {
+      const gw = Math.min(4, Math.max(1, Math.round(img.width / 512)))
+      const gh = Math.min(4, Math.max(1, Math.round(img.height / 512)))
+      setGridWidth(gw)
+      setGridHeight(gh)
+    }
+    img.src = url
+  }
+
   const handleTextureSelect = (file: File, url: string) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(url)
     setCurrentFiles({ diffuse: file })
     setTextureName(file.name.replace(/\.[^/.]+$/, '').replace(/[_\-.]/g, ' ').trim())
     setSelectedId(null)
+    suggestGrid(url)
   }
 
   const handlePBRSelect = (files: TextureFiles, url: string) => {
@@ -47,6 +61,7 @@ function AppTool() {
       setTextureName(files.diffuse.name.replace(/\.[^/.]+$/, '').replace(/[_\-.basecolor]*/g, '').replace(/[_\-.]/g, ' ').trim())
     }
     setSelectedId(null)
+    suggestGrid(url)
   }
 
   const handleAddToPack = () => {
@@ -57,6 +72,8 @@ function AppTool() {
       group: textureGroup,
       tilingX,
       tilingY,
+      gridWidth,
+      gridHeight,
       textures: {
         diffuse: currentFiles.diffuse,
         normal: currentFiles.normal,
@@ -71,6 +88,8 @@ function AppTool() {
     setTextureName('')
     setTilingX(4)
     setTilingY(4)
+    setGridWidth(1)
+    setGridHeight(1)
   }
 
   const handleRemovePaint = (id: string) => {
@@ -89,6 +108,8 @@ function AppTool() {
     setTextureGroup(paint.group)
     setTilingX(paint.tilingX)
     setTilingY(paint.tilingY)
+    setGridWidth(paint.gridWidth)
+    setGridHeight(paint.gridHeight)
   }
 
   const handlePackMetaChange = (field: 'packName' | 'packAuthor', value: string) => {
@@ -183,6 +204,24 @@ function AppTool() {
                   </div>
                 </div>
               </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-zinc-400">Block Span</label>
+                <p className="text-[10px] text-zinc-600">How many blocks this texture covers. Use 1x1 for single block, 2x2 to span 4 blocks, etc.</p>
+                <div className="flex items-center gap-3">
+                  <select value={gridWidth} onChange={(e) => setGridWidth(Number(e.target.value))}
+                    className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:border-amber-500">
+                    {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                  <span className="text-xs text-zinc-500">x</span>
+                  <select value={gridHeight} onChange={(e) => setGridHeight(Number(e.target.value))}
+                    className="bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:border-amber-500">
+                    {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                  {(gridWidth > 1 || gridHeight > 1) && (
+                    <span className="text-[10px] text-amber-400">{gridWidth * gridHeight} tiles</span>
+                  )}
+                </div>
+              </div>
               <button onClick={handleAddToPack} disabled={!canAdd}
                 className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 ${canAdd ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 cursor-pointer' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}>
                 + Add to Pack
@@ -191,7 +230,7 @@ function AppTool() {
           </div>
 
           <div className="flex flex-col gap-6">
-            <WallPreview previewUrl={previewUrl} tilingX={tilingX} tilingY={tilingY} />
+            <WallPreview previewUrl={previewUrl} tilingX={tilingX} tilingY={tilingY} gridWidth={gridWidth} gridHeight={gridHeight} />
           </div>
         </div>
 

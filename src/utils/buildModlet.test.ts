@@ -19,6 +19,8 @@ function mockConfig(overrides?: Partial<PackConfig>): PackConfig {
         group: 'stone',
         tilingX: 4,
         tilingY: 4,
+        gridWidth: 1,
+        gridHeight: 1,
         textures: { diffuse: mockFile('baked_brick_diffuse.png') },
       },
       {
@@ -27,6 +29,8 @@ function mockConfig(overrides?: Partial<PackConfig>): PackConfig {
         group: 'stone',
         tilingX: 4,
         tilingY: 4,
+        gridWidth: 1,
+        gridHeight: 1,
         textures: { diffuse: mockFile('dark_brick_diffuse.png'), normal: mockFile('dark_brick_normal.png') },
       },
     ],
@@ -127,5 +131,61 @@ describe('generateModInfoXml', () => {
   it('mentions OCBCustomTextures requirement', () => {
     const xml = generateModInfoXml(mockConfig())
     expect(xml).toContain('OCBCustomTextures')
+  })
+})
+
+describe('generatePaintingXml multi-block (tile slicing)', () => {
+  function multiBlockConfig(): PackConfig {
+    return mockConfig({
+      paints: [
+        {
+          id: 'abc',
+          name: 'Big Tile',
+          group: 'tile',
+          tilingX: 1,
+          tilingY: 1,
+          gridWidth: 2,
+          gridHeight: 2,
+          textures: { diffuse: mockFile('big_tile_diffuse.png') },
+        },
+      ],
+    })
+  }
+
+  it('expands 2x2 into 4 separate 1x1 paints', () => {
+    const xml = generatePaintingXml(multiBlockConfig())
+    expect(xml).toContain('id="my_test_pack_big_tile_0_0"')
+    expect(xml).toContain('id="my_test_pack_big_tile_1_0"')
+    expect(xml).toContain('id="my_test_pack_big_tile_0_1"')
+    expect(xml).toContain('id="my_test_pack_big_tile_1_1"')
+  })
+
+  it('each tile is 1x1 blockw/blockh', () => {
+    const xml = generatePaintingXml(multiBlockConfig())
+    const matches = xml.match(/w="1" h="1" blockw="1" blockh="1"/g)
+    expect(matches?.length).toBe(4)
+  })
+
+  it('assigns sequential bundle names across tiles', () => {
+    const xml = generatePaintingXml(multiBlockConfig())
+    expect(xml).toContain('Atlas_001.unity3d?assets/big_tile_0_0_diffuse.png')
+    expect(xml).toContain('Atlas_002.unity3d?assets/big_tile_1_0_diffuse.png')
+    expect(xml).toContain('Atlas_003.unity3d?assets/big_tile_0_1_diffuse.png')
+    expect(xml).toContain('Atlas_004.unity3d?assets/big_tile_1_1_diffuse.png')
+  })
+
+  it('keeps 1x1 format for single block paints', () => {
+    const xml = generatePaintingXml(mockConfig())
+    expect(xml).toContain('w="1" h="1" blockw="1" blockh="1"')
+    expect(xml).toContain('assets/baked_brick_diffuse.png"')
+    expect(xml).not.toContain('assets/baked_brick_0_0_diffuse.png')
+  })
+
+  it('generates numbered display names in localization', () => {
+    const loc = generateLocalization(multiBlockConfig())
+    expect(loc).toContain(',Big Tile 01')
+    expect(loc).toContain(',Big Tile 02')
+    expect(loc).toContain(',Big Tile 03')
+    expect(loc).toContain(',Big Tile 04')
   })
 })
