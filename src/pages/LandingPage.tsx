@@ -220,7 +220,7 @@ export default function LandingPage() {
           <div className="flex flex-col gap-3">
             <div className="text-2xl">🔓</div>
             <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-200">Break the 255 Limit</h3>
-            <p className="text-sm text-zinc-500 leading-relaxed">Hit the paint cap? <a href="https://www.nexusmods.com/7daystodie/mods/TODO" className="text-amber-500 hover:text-amber-400 transition-colors">KitsunePaintUnlocked</a> raises the limit to 1023 paints — the first mod to fully break the vanilla ceiling. Pair it with KitsunePaint for unlimited creativity.</p>
+            <p className="text-sm text-zinc-500 leading-relaxed">Hit the paint cap? <a href="https://www.nexusmods.com/7daystodie/mods/10059" className="text-amber-500 hover:text-amber-400 transition-colors">KitsunePaintUnlocked</a> raises the limit to 1023 paints — the first mod to fully break the vanilla ceiling. Pair it with KitsunePaint for unlimited creativity.</p>
           </div>
         </div>
       </section>
@@ -258,10 +258,6 @@ export default function LandingPage() {
               {
                 q: 'How do I update OCBCustomTextures?',
                 a: "Delete your old OcbCustomTextures folder from Mods/ before installing the new version. Don't just overwrite — leftover files from previous versions can cause issues.",
-              },
-              {
-                q: 'Does this work with crossplay?',
-                a: 'Yes. As long as all clients and the server have the same mods installed with EAC off, custom paints work across platforms.',
               },
             ].map(({ q, a }) => (
               <details key={q} className="group border border-zinc-800 rounded-lg overflow-hidden">
