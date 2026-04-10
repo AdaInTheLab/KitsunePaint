@@ -259,10 +259,6 @@ export default function LandingPage() {
                 q: 'How do I update OCBCustomTextures?',
                 a: "Delete your old OcbCustomTextures folder from Mods/ before installing the new version. Don't just overwrite — leftover files from previous versions can cause issues.",
               },
-              {
-                q: 'Does this work with crossplay?',
-                a: 'Yes. As long as all clients and the server have the same mods installed with EAC off, custom paints work across platforms.',
-              },
             ].map(({ q, a }) => (
               <details key={q} className="group border border-zinc-800 rounded-lg overflow-hidden">
                 <summary className="flex items-center justify-between px-5 py-4 cursor-pointer text-sm font-medium text-zinc-200 hover:text-amber-400 transition-colors select-none">
