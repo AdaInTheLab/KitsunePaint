@@ -93,6 +93,18 @@ app.post('/api/build-bundle', upload.fields([
       return res.status(500).json({ error: 'Bundle build produced no output' })
     }
 
+    // Log the build for analytics
+    try {
+      const logPath = path.join(__dirname, 'build-log.jsonl')
+      const entry = JSON.stringify({
+        timestamp: new Date().toISOString(),
+        paintName: safeName,
+        textures: Object.keys(req.files || {}),
+        bundleSize: fs.statSync(bundlePath).size,
+      })
+      fs.appendFileSync(logPath, entry + '\n')
+    } catch (_) { /* non-critical */ }
+
     // Send the binary bundle
     const bundleData = fs.readFileSync(bundlePath)
     res.set('Content-Type', 'application/octet-stream')
@@ -109,6 +121,26 @@ app.post('/api/build-bundle', upload.fields([
         fs.unlink(f.path, () => {})
       }
     }
+  }
+})
+
+/**
+ * GET /api/stats
+ *
+ * Returns build count and recent activity from the build log.
+ */
+app.get('/api/stats', (req, res) => {
+  const logPath = path.join(__dirname, 'build-log.jsonl')
+  if (!fs.existsSync(logPath)) {
+    return res.json({ totalBuilds: 0, recentBuilds: [] })
+  }
+  try {
+    const lines = fs.readFileSync(logPath, 'utf-8').trim().split('\n').filter(Boolean)
+    const entries = lines.map(l => JSON.parse(l))
+    const recent = entries.slice(-10).reverse()
+    res.json({ totalBuilds: entries.length, recentBuilds: recent })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read build log' })
   }
 })
 
