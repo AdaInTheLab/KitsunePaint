@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { TextureUploader } from './components/TextureUploader'
 import { WallPreview } from './components/WallPreview'
 import { PaintTray } from './components/PaintTray'
@@ -32,6 +32,14 @@ function AppTool() {
   const [packAuthor, setPackAuthor] = useState('')
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildProgress, setBuildProgress] = useState('')
+  const [buildCount, setBuildCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(r => r.json())
+      .then(d => setBuildCount(d.totalBuilds ?? null))
+      .catch(() => {})
+  }, [])
 
   const handleTextureSelect = (file: File, url: string) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -123,6 +131,7 @@ function AppTool() {
       a.download = `${packName.toLowerCase().replace(/\s+/g, '_')}_modlet.zip`
       a.click()
       URL.revokeObjectURL(url)
+      setBuildCount(prev => prev !== null ? prev + 1 : 1)
     } catch (err) {
       console.error('Build failed:', err)
       setBuildProgress(`Error: ${err instanceof Error ? err.message : 'Build failed'}`)
@@ -236,16 +245,23 @@ function AppTool() {
           </div>
         )}
 
-        <div className="border-t border-zinc-800/40 mt-8 pt-4 flex justify-center gap-4">
-          <a href="https://github.com/Kitsune-Den/KitsunePaint/issues" target="_blank" rel="noopener noreferrer"
-            className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
-            Report a bug or leave feedback
-          </a>
-          <span className="text-xs text-zinc-800">|</span>
-          <a href="https://ko-fi.com/adainthelab" target="_blank" rel="noopener noreferrer"
-            className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
-            Support on Ko-fi
-          </a>
+        <div className="border-t border-zinc-800/40 mt-8 pt-4 flex flex-col items-center gap-2">
+          {buildCount !== null && buildCount > 0 && (
+            <span className="text-[11px] text-zinc-600">
+              {buildCount.toLocaleString()} modpack{buildCount !== 1 ? 's' : ''} created since April 2026
+            </span>
+          )}
+          <div className="flex justify-center gap-4">
+            <a href="https://github.com/Kitsune-Den/KitsunePaint/issues" target="_blank" rel="noopener noreferrer"
+              className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
+              Report a bug or leave feedback
+            </a>
+            <span className="text-xs text-zinc-800">|</span>
+            <a href="https://ko-fi.com/adainthelab" target="_blank" rel="noopener noreferrer"
+              className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
+              Support on Ko-fi
+            </a>
+          </div>
         </div>
       </main>
     </div>
