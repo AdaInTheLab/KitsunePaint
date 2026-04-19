@@ -33,24 +33,14 @@ function AppTool() {
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildProgress, setBuildProgress] = useState('')
 
-  const suggestGrid = (url: string) => {
-    const img = new window.Image()
-    img.onload = () => {
-      const gw = Math.min(4, Math.max(1, Math.round(img.width / 512)))
-      const gh = Math.min(4, Math.max(1, Math.round(img.height / 512)))
-      setGridWidth(gw)
-      setGridHeight(gh)
-    }
-    img.src = url
-  }
-
   const handleTextureSelect = (file: File, url: string) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(url)
     setCurrentFiles({ diffuse: file })
     setTextureName(file.name.replace(/\.[^/.]+$/, '').replace(/[_\-.]/g, ' ').trim())
     setSelectedId(null)
-    suggestGrid(url)
+    setGridWidth(1)
+    setGridHeight(1)
   }
 
   const handlePBRSelect = (files: TextureFiles, url: string) => {
@@ -61,7 +51,8 @@ function AppTool() {
       setTextureName(files.diffuse.name.replace(/\.[^/.]+$/, '').replace(/[_\-.basecolor]*/g, '').replace(/[_\-.]/g, ' ').trim())
     }
     setSelectedId(null)
-    suggestGrid(url)
+    setGridWidth(1)
+    setGridHeight(1)
   }
 
   const handleAddToPack = () => {
@@ -244,6 +235,18 @@ function AppTool() {
             </button>
           </div>
         )}
+
+        <div className="border-t border-zinc-800/40 mt-8 pt-4 flex justify-center gap-4">
+          <a href="https://github.com/Kitsune-Den/KitsunePaint/issues" target="_blank" rel="noopener noreferrer"
+            className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
+            Report a bug or leave feedback
+          </a>
+          <span className="text-xs text-zinc-800">|</span>
+          <a href="https://ko-fi.com/adainthelab" target="_blank" rel="noopener noreferrer"
+            className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
+            Support on Ko-fi
+          </a>
+        </div>
       </main>
     </div>
   )
