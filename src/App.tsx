@@ -5,6 +5,7 @@ import { PaintTray } from './components/PaintTray'
 import { PackMeta } from './components/PackMeta'
 import { buildModletZip } from './utils/buildModlet'
 import LandingPage from './pages/LandingPage'
+import TermsPage from './pages/TermsPage'
 import type { PaintEntry, PaintGroup } from './types'
 
 interface TextureFiles {
@@ -261,6 +262,10 @@ function AppTool() {
               className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
               Support on Ko-fi
             </a>
+            <span className="text-xs text-zinc-800">|</span>
+            <a href="/terms" className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
+              Terms & Privacy
+            </a>
           </div>
         </div>
       </main>
@@ -271,5 +276,6 @@ function AppTool() {
 export default function App() {
   const path = window.location.pathname
   if (path === '/app') return <AppTool />
+  if (path === '/terms') return <TermsPage />
   return <LandingPage />
 }
