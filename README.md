@@ -59,8 +59,10 @@ public/
 
 ## Part of the Kitsune Ecosystem
 
-- [KitsuneDen](https://github.com/AdaInTheLab/KitsuneDen) — home server dashboard
-- [KitsuneCommand](https://github.com/AdaInTheLab/KitsuneCommand) — 7D2D server mod
+- [KitsuneCommand](https://github.com/Kitsune-Den/KitsuneCommand) — 7D2D server-management suite (RESTful API + web panel)
+- [Kitsune7Den](https://github.com/Kitsune-Den/Kitsune7Den) — Windows desktop dashboard for 7D2D dedicated servers
+- [KitsunePaintUnlocked](https://github.com/Kitsune-Den/KitsunePaintUnlocked) — breaks the 255 paint texture hard limit to 1023
+- [KitsuneDen](https://github.com/Kitsune-Den/KitsuneDen) — unified home-server dashboard (Minecraft / 7D2D / Hytale)
 - **KitsunePaint** — custom paint pack creator ← you are here
 
 ---
