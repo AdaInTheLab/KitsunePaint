@@ -282,7 +282,11 @@ export default function LandingPage() {
             Powered by <span className="text-amber-600/70 hover:text-amber-500 transition-colors cursor-default">the Skulk</span>
           </span>
         </div>
-        <span className="text-xs text-zinc-700">paint.kitsuneden.net</span>
+        <span className="text-xs text-zinc-700">
+          <a href="/terms" className="hover:text-amber-500 transition-colors">Terms & Privacy</a>
+          {' · '}
+          paint.kitsuneden.net
+        </span>
       </footer>
     </div>
   )
