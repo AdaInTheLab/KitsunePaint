@@ -19,11 +19,11 @@ Upload your textures, preview how they tile on a wall, download a ready-to-insta
 
 ## What it does
 
-1. **Upload** — drag and drop PNG/JPG textures in Simple mode (diffuse only) or PBR mode (diffuse + normal + specular)
-2. **Preview** — see exactly how your texture tiles on a simulated block wall before you commit
-3. **Configure** — name your paint, pick a group (Masonry, Wallpaper, Tiles etc), tweak tiling
-4. **Download** — get a complete `.zip` modlet with painting.xml, Localization.txt, ModInfo.xml, and all source textures
-5. **Build bundles** — run the included Python script to generate `Atlas_XXX.unity3d` asset bundles — one per paint, scales to 20+ paints
+1. **Upload:** drag and drop PNG/JPG textures in Simple mode (diffuse only) or PBR mode (diffuse + normal + specular)
+2. **Preview:** see exactly how your texture tiles on a simulated block wall before you commit
+3. **Configure:** name your paint, pick a group (Masonry, Wallpaper, Tiles etc), tweak tiling
+4. **Download:** get a complete `.zip` modlet with painting.xml, Localization.txt, ModInfo.xml, and all source textures
+5. **Build bundles:** run the included Python script to generate `Atlas_XXX.unity3d` asset bundles, one per paint, scales to 20+ paints
 
 ## Bundle Builder
 
@@ -38,7 +38,7 @@ This generates per-paint Unity asset bundles with proper mipmap data, DXTnm norm
 
 ## Dependencies
 
-- [OCBCustomTextures](https://www.nexusmods.com/7daystodie/mods/2788) v0.8.0+ — must be installed on server and client
+- [OCBCustomTextures](https://www.nexusmods.com/7daystodie/mods/2788) v0.8.0+ (must be installed on server and client)
 - EAC must be disabled on both server and client
 - 7 Days to Die V2.0+
 - Python + `pip install UnityPy Pillow` (for bundle builder only)
@@ -67,11 +67,11 @@ public/
 
 ## Part of the Kitsune Ecosystem
 
-- [KitsuneCommand](https://github.com/Kitsune-Den/KitsuneCommand) — 7D2D server-management suite (RESTful API + web panel)
-- [Kitsune7Den](https://github.com/Kitsune-Den/Kitsune7Den) — Windows desktop dashboard for 7D2D dedicated servers
-- [KitsunePaintUnlocked](https://github.com/Kitsune-Den/KitsunePaintUnlocked) — breaks the 255 paint texture hard limit to 1023
-- [KitsuneDen](https://github.com/Kitsune-Den/KitsuneDen) — unified home-server dashboard (Minecraft / 7D2D / Hytale)
-- **KitsunePaint** — custom paint pack creator ← you are here
+- [KitsuneCommand](https://github.com/Kitsune-Den/KitsuneCommand): 7D2D server-management suite (RESTful API + web panel)
+- [Kitsune7Den](https://github.com/Kitsune-Den/Kitsune7Den): Windows desktop dashboard for 7D2D dedicated servers
+- [KitsunePaintUnlocked](https://github.com/Kitsune-Den/KitsunePaintUnlocked): breaks the 255 paint texture hard limit to 1023
+- [KitsuneDen](https://github.com/Kitsune-Den/KitsuneDen): unified home-server dashboard (Minecraft / 7D2D / Hytale)
+- **KitsunePaint**: custom paint pack creator ← you are here
 
 ---
 
