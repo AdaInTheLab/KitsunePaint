@@ -22,11 +22,49 @@ export default function TermsPage() {
             <h2 className="text-base font-semibold text-zinc-200 mb-2">Your Data</h2>
             <ul className="list-disc list-inside space-y-1 text-zinc-400">
               <li>We do <strong className="text-zinc-200">not</strong> collect personal information</li>
-              <li>We do <strong className="text-zinc-200">not</strong> use cookies or tracking scripts</li>
-              <li>We do <strong className="text-zinc-200">not</strong> run analytics (no Google Analytics, no tracking pixels)</li>
+              <li>We do <strong className="text-zinc-200">not</strong> use third-party trackers (no Google Analytics, no Meta pixels, no ads)</li>
               <li>We do <strong className="text-zinc-200">not</strong> require accounts or logins</li>
-              <li>We do <strong className="text-zinc-200">not</strong> store your IP address</li>
+              <li>We do <strong className="text-zinc-200">not</strong> sell, share, or monetize your data</li>
+              <li>We do <strong className="text-zinc-200">not</strong> store your full IP address (last two octets are anonymized before storage)</li>
             </ul>
+          </section>
+
+          <section>
+            <h2 className="text-base font-semibold text-zinc-200 mb-2">Analytics</h2>
+            <p>
+              We use{' '}
+              <a href="https://matomo.org/" target="_blank" rel="noopener noreferrer"
+                className="text-amber-500 hover:text-amber-400 transition-colors">
+                Matomo
+              </a>
+              , a privacy-respecting open-source analytics platform, to understand which
+              features people use. <strong className="text-zinc-200">Matomo runs on our
+              own infrastructure at <code className="text-amber-500">analytics.kitsuneden.net</code></strong> —
+              your data is never sent to Google, Meta, or any third-party tracker.
+            </p>
+            <p className="mt-3">
+              <strong className="text-zinc-200">What we collect:</strong> pages you visit,
+              time on page, the site that referred you, general device info (browser, OS,
+              screen size), your approximate country, and a partially anonymized IP
+              address.
+            </p>
+            <p className="mt-3">
+              <strong className="text-zinc-200">What we don't collect:</strong> your name,
+              email, cross-site browsing, or anything at all when your browser sends
+              &ldquo;Do Not Track&rdquo; — we honor DNT.
+            </p>
+            <p className="mt-3">
+              <strong className="text-zinc-200">Retention:</strong> visitor logs are
+              automatically deleted after 12 months.
+            </p>
+            <p className="mt-3">
+              <strong className="text-zinc-200">Opt out:</strong> enable &ldquo;Do Not
+              Track&rdquo; in your browser, or use our{' '}
+              <a href="https://analytics.kitsuneden.net/index.php?module=CoreAdminHome&action=optOut" target="_blank" rel="noopener noreferrer"
+                className="text-amber-500 hover:text-amber-400 transition-colors">
+                Matomo opt-out tool
+              </a>.
+            </p>
           </section>
 
           <section>
@@ -92,7 +130,7 @@ export default function TermsPage() {
           </section>
 
           <p className="text-xs text-zinc-700 pt-4 border-t border-zinc-800/40">
-            Last updated: April 2026
+            Last updated: April 24, 2026
           </p>
         </div>
       </div>
