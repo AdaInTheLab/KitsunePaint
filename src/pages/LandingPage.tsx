@@ -124,6 +124,7 @@ export default function LandingPage() {
           <span className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">KitsunePaint <span className="text-zinc-600 font-normal">v{__APP_VERSION__}</span></span>
         </div>
         <div className="flex items-center gap-6 text-xs text-zinc-500 tracking-wider uppercase">
+          <a href="https://prints.kitsuneden.net" className="hover:text-amber-400 transition-colors">🐱 KitsunePrints</a>
           <a href="https://github.com/Kitsune-Den/KitsunePaint" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">GitHub</a>
           <a href="https://www.nexusmods.com/7daystodie/mods/2788" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400 transition-colors">OCBCustomTextures</a>
         </div>
