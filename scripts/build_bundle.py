@@ -7,8 +7,21 @@ injects them into Atlas.unity3d bundles using UnityPy.
 Generates one bundle per paint for unlimited scalability.
 No Unity installation required.
 
+Asset paths inside the bundles are prefixed with the pack ID so
+multiple paint packs can coexist without internal name collisions
+(Unity refuses to load two bundles whose contents share the same
+asset paths). The pack ID is read from ../ModInfo.xml's <Name>
+field, or falls back to the parent folder name.
+
+Your painting.xml entries must reference the namespaced paths,
+e.g. assets/<packId>_<paint>_diffuse.png
+
 Usage:
-    python scripts/build_bundle.py <modlet_resources_dir> [template_bundle]
+    python scripts/build_bundle.py <modlet_resources_dir> [template_bundle] [--pack-id <id>]
+
+The --pack-id flag overrides auto-detection. Pass "" (empty) to disable
+namespacing entirely (used by the web tool, which prefixes filenames
+upstream and doesn't want a second prefix applied).
 
 Example:
     python scripts/build_bundle.py "F:/72D2D-Server/Mods/my_pack/Resources"
@@ -17,7 +30,9 @@ Requirements:
     pip install UnityPy Pillow
 """
 
+import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from PIL import Image
 import UnityPy
@@ -32,6 +47,37 @@ DEFAULT_SPECULAR_COLOR = (16, 200, 0, 235)
 FMT_DXT1 = 10
 FMT_DXT5 = 12
 MIP_COUNT = 8
+
+
+def sanitize_pack_id(name: str) -> str:
+    """Match the web tool's sanitizeId: lowercase, spaces -> _, strip non-[a-z0-9_]."""
+    s = name.lower()
+    s = re.sub(r"\s+", "_", s)
+    s = re.sub(r"[^a-z0-9_]", "", s)
+    return s
+
+
+def resolve_pack_id(resources_dir: Path) -> str:
+    """Determine the pack ID for asset namespacing.
+
+    Looks for ../ModInfo.xml relative to the resources dir and parses its
+    <Name> value. Falls back to the parent folder name if the manifest is
+    missing or unreadable.
+    """
+    modlet_dir = resources_dir.parent
+    modinfo = modlet_dir / "ModInfo.xml"
+    if modinfo.is_file():
+        try:
+            root = ET.parse(modinfo).getroot()
+            for el in root.iter():
+                tag = el.tag.lower()
+                if tag == "name":
+                    val = el.attrib.get("value")
+                    if val:
+                        return sanitize_pack_id(val)
+        except Exception as ex:
+            print(f"  WARN: could not parse {modinfo}: {ex}")
+    return sanitize_pack_id(modlet_dir.name) or "pack"
 
 
 def resize_to_512(img: Image.Image) -> Image.Image:
@@ -144,14 +190,24 @@ def build_single_bundle(
         f.write(bundle.save())
 
 
-def build_bundles(resources_dir: Path, template_path: Path) -> None:
+def build_bundles(resources_dir: Path, template_path: Path, pack_id_override=None) -> None:
     paint_files = collect_paint_files(resources_dir)
 
     if not paint_files:
         print(f"ERROR: No diffuse textures found in {resources_dir}")
         sys.exit(1)
 
-    print(f"\nFound {len(paint_files)} paint(s): {list(paint_files.keys())}")
+    # pack_id_override: None = auto-detect, "" = explicitly disabled
+    if pack_id_override is None:
+        pack_id = resolve_pack_id(resources_dir)
+    else:
+        pack_id = pack_id_override
+
+    if pack_id:
+        print(f"\nPack ID:  {pack_id} (asset paths will be prefixed)")
+    else:
+        print(f"\nPack ID:  <none> (asset names used as-is, expects upstream prefix)")
+    print(f"Found {len(paint_files)} paint(s): {list(paint_files.keys())}")
 
     neutral_normal = Image.new("RGBA", TARGET_SIZE, DEFAULT_NORMAL_COLOR)
     default_specular = Image.new("RGBA", TARGET_SIZE, DEFAULT_SPECULAR_COLOR)
@@ -165,8 +221,12 @@ def build_bundles(resources_dir: Path, template_path: Path) -> None:
     for i, (paint_name, files) in enumerate(paint_files.items(), 1):
         bundle_name = f"Atlas_{i:03d}.unity3d"
         output_path = resources_dir / bundle_name
+        # Asset paths inside each bundle are namespaced by pack ID so
+        # multiple packs can coexist without Unity bundle collisions.
+        asset_name = f"{pack_id}_{paint_name}" if pack_id else paint_name
 
         print(f"\n  [{i}/{len(paint_files)}] {paint_name} -> {bundle_name}")
+        print(f"    assets:   assets/{asset_name}_(diffuse|normal|specular).png")
 
         diffuse_img = resize_to_512(Image.open(files["diffuse"]))
         print(f"    diffuse:  {files['diffuse'].name}")
@@ -186,7 +246,7 @@ def build_bundles(resources_dir: Path, template_path: Path) -> None:
             print(f"    specular: [default]")
 
         build_single_bundle(
-            paint_name=paint_name,
+            paint_name=asset_name,
             diffuse=diffuse_img,
             normal=normal_img,
             specular=specular_img,
@@ -198,15 +258,32 @@ def build_bundles(resources_dir: Path, template_path: Path) -> None:
         print(f"    saved {bundle_name} ({size_kb:.0f} KB)")
 
     print(f"\n✅ Built {len(paint_files)} bundle(s) in {resources_dir}")
+    if pack_id:
+        print(f"   painting.xml must reference: assets/{pack_id}_<paint>_(diffuse|normal|specular).png")
 
 
 def main():
-    if len(sys.argv) < 2:
+    args = sys.argv[1:]
+    if not args:
         print(__doc__)
         sys.exit(1)
 
-    resources_dir = Path(sys.argv[1])
-    template_path = Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_TEMPLATE
+    # Parse optional --pack-id flag (can be empty string to disable namespacing)
+    pack_id_override = None
+    if "--pack-id" in args:
+        idx = args.index("--pack-id")
+        if idx + 1 >= len(args):
+            print("ERROR: --pack-id requires a value (use \"\" to disable)")
+            sys.exit(1)
+        pack_id_override = sanitize_pack_id(args[idx + 1])
+        del args[idx:idx + 2]
+
+    if not args:
+        print(__doc__)
+        sys.exit(1)
+
+    resources_dir = Path(args[0])
+    template_path = Path(args[1]) if len(args) > 1 else DEFAULT_TEMPLATE
 
     if not resources_dir.exists():
         print(f"ERROR: Resources directory not found: {resources_dir}")
@@ -219,7 +296,7 @@ def main():
     print(f"Resources: {resources_dir}")
     print(f"Template:  {template_path}")
 
-    build_bundles(resources_dir, template_path)
+    build_bundles(resources_dir, template_path, pack_id_override=pack_id_override)
     print("\nRestart your server and client to see the new paints!")
 
 
