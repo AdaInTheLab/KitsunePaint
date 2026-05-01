@@ -40,11 +40,15 @@ export function generatePaintingXml(config: PackConfig): string {
     const texName = `txName_${id}`
     const group = `txGroup${tile.group.charAt(0).toUpperCase() + tile.group.slice(1)}`
     const bundleName = `Atlas_${String(tile.bundleIndex + 1).padStart(3, '0')}.unity3d`
+    // Asset names are namespaced by packId so that internal Unity asset
+    // paths are globally unique across paint packs. Without this, two
+    // packs with a paint of the same name would collide on load.
+    const assetName = `${packId}_${tile.baseName}`
 
     return `  <opaque id="${id}" name="${texName}" x="0" y="0" w="1" h="1" blockw="1" blockh="1">
-    <property name="Diffuse" value="#@modfolder:Resources/${bundleName}?assets/${tile.baseName}_diffuse.png"/>
-    <property name="Normal" value="#@modfolder:Resources/${bundleName}?assets/${tile.baseName}_normal.png"/>
-    <property name="Specular" value="#@modfolder:Resources/${bundleName}?assets/${tile.baseName}_specular.png"/>
+    <property name="Diffuse" value="#@modfolder:Resources/${bundleName}?assets/${assetName}_diffuse.png"/>
+    <property name="Normal" value="#@modfolder:Resources/${bundleName}?assets/${assetName}_normal.png"/>
+    <property name="Specular" value="#@modfolder:Resources/${bundleName}?assets/${assetName}_specular.png"/>
     <property name="PaintCost" value="1"/>
     <property name="Hidden" value="false"/>
     <property name="Group" value="${group}"/>
@@ -178,9 +182,14 @@ export async function buildModletZip(
     onProgress?.(i + 1, config.paints.length, paint.name)
 
     try {
+      // Bundle internal asset paths must be globally unique across paint
+      // packs (Unity rejects bundles whose contents collide with already-
+      // loaded ones). Prefix every asset name with packId so two packs
+      // with the same paint name (e.g. "wood") never collide.
       if (tileCount === 1) {
         const bundleName = `Atlas_${String(bundleIndex + 1).padStart(3, '0')}.unity3d`
-        const bundleData = await buildBundle(baseName, paint.textures.diffuse, paint.textures.normal, paint.textures.specular)
+        const assetName = `${packId}_${baseName}`
+        const bundleData = await buildBundle(assetName, paint.textures.diffuse, paint.textures.normal, paint.textures.specular)
         resources.file(bundleName, bundleData)
         bundleIndex++
       } else {
@@ -194,19 +203,20 @@ export async function buildModletZip(
           const y = Math.floor(ti / gw)
           const tileName = `${baseName}_${x}_${y}`
           const bundleName = `Atlas_${String(bundleIndex + 1).padStart(3, '0')}.unity3d`
-          const bundleData = await buildBundle(tileName, diffuseTiles[ti], normalTiles[ti], specularTiles[ti])
+          const assetName = `${packId}_${tileName}`
+          const bundleData = await buildBundle(assetName, diffuseTiles[ti], normalTiles[ti], specularTiles[ti])
           resources.file(bundleName, bundleData)
           bundleIndex++
         }
       }
     } catch (err) {
       console.error(`Failed to build bundle for ${paint.name}:`, err)
-      resources.file(`${baseName}_diffuse.png`, await paint.textures.diffuse.arrayBuffer())
+      resources.file(`${packId}_${baseName}_diffuse.png`, await paint.textures.diffuse.arrayBuffer())
       if (paint.textures.normal) {
-        resources.file(`${baseName}_normal.png`, await paint.textures.normal.arrayBuffer())
+        resources.file(`${packId}_${baseName}_normal.png`, await paint.textures.normal.arrayBuffer())
       }
       if (paint.textures.specular) {
-        resources.file(`${baseName}_specular.png`, await paint.textures.specular.arrayBuffer())
+        resources.file(`${packId}_${baseName}_specular.png`, await paint.textures.specular.arrayBuffer())
       }
       bundleIndex += tileCount
     }

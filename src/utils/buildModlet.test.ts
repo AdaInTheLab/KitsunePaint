@@ -80,11 +80,13 @@ describe('generatePaintingXml', () => {
     expect(xml).toContain('Atlas_002.unity3d')
   })
 
-  it('references diffuse, normal, and specular per bundle', () => {
+  it('references diffuse, normal, and specular per bundle, namespaced by pack ID', () => {
     const xml = generatePaintingXml(mockConfig())
-    expect(xml).toContain('assets/baked_brick_diffuse.png')
-    expect(xml).toContain('assets/baked_brick_normal.png')
-    expect(xml).toContain('assets/baked_brick_specular.png')
+    // Asset names are prefixed with packId to keep them globally unique
+    // across paint packs (Unity collision avoidance).
+    expect(xml).toContain('assets/my_test_pack_baked_brick_diffuse.png')
+    expect(xml).toContain('assets/my_test_pack_baked_brick_normal.png')
+    expect(xml).toContain('assets/my_test_pack_baked_brick_specular.png')
   })
 })
 
@@ -168,17 +170,17 @@ describe('generatePaintingXml multi-block (tile slicing)', () => {
 
   it('assigns sequential bundle names across tiles', () => {
     const xml = generatePaintingXml(multiBlockConfig())
-    expect(xml).toContain('Atlas_001.unity3d?assets/big_tile_0_0_diffuse.png')
-    expect(xml).toContain('Atlas_002.unity3d?assets/big_tile_1_0_diffuse.png')
-    expect(xml).toContain('Atlas_003.unity3d?assets/big_tile_0_1_diffuse.png')
-    expect(xml).toContain('Atlas_004.unity3d?assets/big_tile_1_1_diffuse.png')
+    expect(xml).toContain('Atlas_001.unity3d?assets/my_test_pack_big_tile_0_0_diffuse.png')
+    expect(xml).toContain('Atlas_002.unity3d?assets/my_test_pack_big_tile_1_0_diffuse.png')
+    expect(xml).toContain('Atlas_003.unity3d?assets/my_test_pack_big_tile_0_1_diffuse.png')
+    expect(xml).toContain('Atlas_004.unity3d?assets/my_test_pack_big_tile_1_1_diffuse.png')
   })
 
   it('keeps 1x1 format for single block paints', () => {
     const xml = generatePaintingXml(mockConfig())
     expect(xml).toContain('w="1" h="1" blockw="1" blockh="1"')
-    expect(xml).toContain('assets/baked_brick_diffuse.png"')
-    expect(xml).not.toContain('assets/baked_brick_0_0_diffuse.png')
+    expect(xml).toContain('assets/my_test_pack_baked_brick_diffuse.png"')
+    expect(xml).not.toContain('assets/my_test_pack_baked_brick_0_0_diffuse.png')
   })
 
   it('generates numbered display names in localization', () => {
