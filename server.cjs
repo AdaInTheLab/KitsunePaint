@@ -73,7 +73,10 @@ app.post('/api/build-bundle', upload.fields([
 
     await new Promise((resolve, reject) => {
       const pythonCmd = process.platform === 'win32' ? 'python' : 'python3'
-      execFile(pythonCmd, ['-X', 'utf8', scriptPath, tempDir, templatePath], {
+      // --pack-id "" disables Python-side namespacing because the JS side
+      // (buildModlet.ts) has already prefixed asset filenames with the pack ID
+      // before uploading. A second prefix would produce double-prefixed paths.
+      execFile(pythonCmd, ['-X', 'utf8', scriptPath, tempDir, templatePath, '--pack-id', ''], {
         timeout: 30000,
       }, (error, stdout, stderr) => {
         if (error) {
