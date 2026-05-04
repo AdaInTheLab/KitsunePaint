@@ -32,6 +32,19 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Debug — verify key fingerprint
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/test_key
+          chmod 600 ~/.ssh/test_key
+          echo "=== Key file first/last lines ==="
+          head -1 ~/.ssh/test_key
+          tail -1 ~/.ssh/test_key
+          echo "=== Line count ==="
+          wc -l ~/.ssh/test_key
+          echo "=== Fingerprint ==="
+          ssh-keygen -lf ~/.ssh/test_key || echo "Key parsing failed"
+          
       - name: Deploy via rsync over SSH
         uses: easingthemes/ssh-deploy@main
         env:
