@@ -1,4 +1,4 @@
-name: Deploy to DreamHost VPS
+name: Deploy KitsunePaint to kitsuneden VPS
 
 on:
   push:
@@ -6,17 +6,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
 
-      - name: Install dependencies
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps for build pipeline
+        run: pip install UnityPy Pillow
+
+      - name: Install npm deps
         run: npm ci
 
       - name: Run tests
@@ -25,62 +32,12 @@ jobs:
       - name: Build
         run: npm run build
 
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            # Load nvm for non-interactive SSH
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
-            BUILD_DIR=/home/dh_hmzudk/kitsunepaint-build
-
-            # Clone or pull
-            if [ -d "$BUILD_DIR/.git" ]; then
-              cd "$BUILD_DIR"
-              git checkout -- .
-              git pull origin main
-            else
-              rm -rf "$BUILD_DIR"
-              git clone https://github.com/Kitsune-Den/KitsunePaint.git "$BUILD_DIR"
-              cd "$BUILD_DIR"
-            fi
-
-            # Install Python deps
-            python3 -m pip install --user UnityPy Pillow -q
-
-            # Install all deps + build frontend
-            npm install
-            npx vite build
-
-            # Restart server and verify — run in a subshell to isolate signals
-            bash -c '
-              systemctl --user restart kitsunepaint
-              sleep 3
-              for i in 1 2 3; do
-                if curl -sf http://localhost:3002 > /dev/null; then
-                  # Verify systemd is managing exactly one main PID
-                  MAIN_PID=$(systemctl --user show kitsunepaint --property=MainPID --value)
-                  if [ "$MAIN_PID" -gt 0 ] 2>/dev/null; then
-                    echo "✅ Deployed — health check passed (systemd PID: $MAIN_PID)"
-                  else
-                    echo "⚠️  Deployed but systemd has no active PID"
-                  fi
-                  exit 0
-                fi
-                echo "⚠️  Health check attempt $i failed, retrying..."
-                systemctl --user restart kitsunepaint
-                sleep 3
-              done
-              echo "❌ Health check failed after 3 attempts"
-              exit 1
-            '
+      - name: Deploy via rsync over SSH
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          ARGS: "-rlgoDzvc -i --delete"
+          SOURCE: "dist/"
+          REMOTE_HOST: ${{ secrets.VPS_HOST }}
+          REMOTE_USER: ${{ secrets.VPS_USER }}
+          TARGET: ${{ secrets.VPS_PATH }}
