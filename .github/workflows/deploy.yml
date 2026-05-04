@@ -31,10 +31,17 @@ jobs:
 
       - name: Build
         run: npm run build
-          
-      - name: Test SSH directly
+
+      - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 -v ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "whoami && hostname"
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy dist/ to /var/www/paint.kitsuneden.net
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_ed25519" \
+            ./dist/ \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/paint.kitsuneden.net/
