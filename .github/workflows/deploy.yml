@@ -45,12 +45,9 @@ jobs:
           echo "=== Fingerprint ==="
           ssh-keygen -lf ~/.ssh/test_key || echo "Key parsing failed"
           
-      - name: Deploy via rsync over SSH
-        uses: easingthemes/ssh-deploy@main
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
-          ARGS: "-rlgoDzvc -i --delete"
-          SOURCE: "dist/"
-          REMOTE_HOST: ${{ secrets.VPS_HOST }}
-          REMOTE_USER: ${{ secrets.VPS_USER }}
-          TARGET: ${{ secrets.VPS_PATH }}
+      - name: Test SSH directly
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 -v ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "whoami && hostname"
