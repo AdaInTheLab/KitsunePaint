@@ -53,7 +53,7 @@ function pickRandomIdx(poolLength: number, excludeIdx: number): number {
   return next
 }
 
-const ROTATE_MS = 6500
+const ROTATE_MS = 10000
 
 /**
  * Full-screen building modal. Replaces the previous gray "Building (1/2)..."
