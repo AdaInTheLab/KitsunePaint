@@ -29,3 +29,13 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Claude Code local settings (per-machine, not shared)
+.claude/settings.local.json
+
+# Local exploration / probe scripts ~ used to investigate bundle internals
+# during development, not meant to ship. Add new probes following these
+# naming conventions and they'll be auto-ignored.
+scripts/extract_*.py
+scripts/probe_*.py
+scripts/list_*.py
