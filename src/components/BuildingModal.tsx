@@ -93,7 +93,7 @@ export function BuildingModal({ progress }: { progress: string }) {
             keeps her feeling alive while the build runs. */}
         <div className="absolute -top-20 left-1/2 -translate-x-1/2 pointer-events-none">
           <img
-            src="/kitsune-paint-wait-hero.png"
+            src="/kitsune-paint-wait-hero.webp"
             alt="Paint kitsune mascot"
             width={180}
             height={180}

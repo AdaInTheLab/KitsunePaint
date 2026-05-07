@@ -133,7 +133,7 @@ export default function LandingPage() {
       <main className="relative z-10 flex flex-col items-center justify-center min-h-[85vh] px-6 text-center">
         <div className={`mb-6 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           style={{ filter: 'drop-shadow(0 0 60px rgba(251,146,60,0.35))' }}>
-          <img src="/kitsune-paint-hero.png" alt="KitsunePaint" className="w-64 h-64 md:w-80 md:h-80 object-contain" />
+          <img src="/kitsune-paint-hero.webp" alt="KitsunePaint" className="w-64 h-64 md:w-80 md:h-80 object-contain" />
         </div>
 
         <div className={`transition-all duration-1000 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -176,13 +176,13 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <div className="rounded-xl overflow-hidden border border-zinc-800 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
-                <img src="/screenshot-paint-menu.png" alt="Custom paints in the 7D2D paint menu" className="w-full object-cover" />
+                <img src="/screenshot-paint-menu.webp" alt="Custom paints in the 7D2D paint menu" className="w-full object-cover" loading="lazy" />
               </div>
               <p className="text-xs text-zinc-600 text-center">Custom paints show up directly in the game paint menu</p>
             </div>
             <div className="flex flex-col gap-2">
               <div className="rounded-xl overflow-hidden border border-zinc-800 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
-                <img src="/screenshot-ingame-wall.png" alt="Custom texture rendered on a wall in 7D2D" className="w-full object-cover" />
+                <img src="/screenshot-ingame-wall.webp" alt="Custom texture rendered on a wall in 7D2D" className="w-full object-cover" loading="lazy" />
               </div>
               <p className="text-xs text-zinc-600 text-center">Full PBR rendering with normal maps — in a zombie survival game</p>
             </div>
