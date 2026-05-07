@@ -165,7 +165,7 @@ export default function LandingPage() {
         </div>
 
         <p className={`mt-6 text-xs text-zinc-600 transition-all duration-1000 delay-700 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          Requires <a href="https://www.nexusmods.com/7daystodie/mods/2788" className="text-zinc-500 hover:text-amber-500 underline underline-offset-2 transition-colors" target="_blank" rel="noopener noreferrer">OCBCustomTextures</a> · EAC must be off · V2.0+
+          Requires <a href="https://www.nexusmods.com/7daystodie/mods/2788" className="text-zinc-500 hover:text-amber-500 underline underline-offset-2 transition-colors" target="_blank" rel="noopener noreferrer">OCBCustomTextures</a> · EAC must be off · V2.0+ · <a href="#bundle-builder" className="text-zinc-500 hover:text-amber-500 underline underline-offset-2 transition-colors">Run locally with the DIY kit</a>
         </p>
       </main>
 
@@ -203,10 +203,17 @@ export default function LandingPage() {
             <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-200">Download a Modlet</h3>
             <p className="text-sm text-zinc-500 leading-relaxed">Name it, group it, pack as many textures as you want. One click gives you a zip with the correct XML, localization, and source files.</p>
           </div>
-          <div className="flex flex-col gap-3">
+          <div id="bundle-builder" className="flex flex-col gap-3 scroll-mt-24">
             <div className="text-2xl">⚡</div>
             <h3 className="text-sm font-bold tracking-widest uppercase text-zinc-200">Bundle Builder</h3>
-            <p className="text-sm text-zinc-500 leading-relaxed">Run the included Python script on your Resources folder. It generates the Unity asset bundles automatically. No Unity install required.</p>
+            <p className="text-sm text-zinc-500 leading-relaxed">Want to run the same compiler locally? No web round-trip, no rate limits, no Unity install ~ just Python plus two pip packages.</p>
+            <a
+              href="/KitsunePaint-DIY-Kit.zip"
+              download
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-500 hover:text-amber-400 transition-colors"
+            >
+              ⬇ Download DIY Kit (1.4 MB)
+            </a>
           </div>
           <div className="flex flex-col gap-3">
             <div className="text-2xl">🔪</div>
