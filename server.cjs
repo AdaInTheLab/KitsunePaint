@@ -8,6 +8,7 @@
 
 const express = require('express')
 const multer = require('multer')
+const rateLimit = require('express-rate-limit')
 const { execFile } = require('child_process')
 const fs = require('fs')
 const path = require('path')
@@ -16,6 +17,12 @@ const os = require('os')
 const app = express()
 const PORT = process.env.PORT || 3002
 
+// Behind Caddy reverse proxy ~ trust the X-Forwarded-For header so req.ip
+// resolves to the real client, not 127.0.0.1. Without this, every request
+// would look like loopback and the rate limiter would treat all callers
+// as the same IP (i.e. instantly block everyone).
+app.set('trust proxy', 'loopback')
+
 // CORS for cross-port requests (Apache on 80/443, Express on 3002)
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*')
@@ -23,6 +30,23 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.sendStatus(200)
   next()
+})
+
+// Rate limiter for the bundle build endpoint. Each Python subprocess takes
+// ~2 seconds and runs serially, so a single automated caller flooding the
+// endpoint can choke real users. Cap at 50 builds/hour per IP ~ a heavy
+// 7DTD modder building a 23-paint pack hits ~23/hour, comfortable headroom.
+// Automated bulk callers exceeding 50 should slow down or batch differently.
+const buildLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error:
+      'Rate limit hit ~ max 50 bundle builds per hour. ' +
+      'Try again in a bit, or batch your work differently.',
+  },
 })
 
 // Serve static frontend
@@ -38,7 +62,7 @@ const upload = multer({ dest: os.tmpdir() })
  * Runs build_bundle.py to produce a .unity3d asset bundle.
  * Returns the binary bundle file.
  */
-app.post('/api/build-bundle', upload.fields([
+app.post('/api/build-bundle', buildLimiter, upload.fields([
   { name: 'diffuse', maxCount: 1 },
   { name: 'normal', maxCount: 1 },
   { name: 'specular', maxCount: 1 },
@@ -96,7 +120,10 @@ app.post('/api/build-bundle', upload.fields([
       return res.status(500).json({ error: 'Bundle build produced no output' })
     }
 
-    // Log the build for analytics
+    // Log the build for analytics. Captures who/where/how alongside the what
+    // so we can answer questions like "is this our frontend or a script
+    // hitting the API directly?" and "is one IP responsible for a flood?".
+    // Stored locally on disk only; not exposed via /api/stats.
     try {
       const logPath = path.join(__dirname, 'build-log.jsonl')
       const entry = JSON.stringify({
@@ -104,6 +131,9 @@ app.post('/api/build-bundle', upload.fields([
         paintName: safeName,
         textures: Object.keys(req.files || {}),
         bundleSize: fs.statSync(bundlePath).size,
+        userAgent: req.headers['user-agent'] || null,
+        referer: req.headers['referer'] || null,
+        ip: req.ip || null,
       })
       fs.appendFileSync(logPath, entry + '\n')
     } catch (_) { /* non-critical */ }
@@ -140,7 +170,15 @@ app.get('/api/stats', (req, res) => {
   try {
     const lines = fs.readFileSync(logPath, 'utf-8').trim().split('\n').filter(Boolean)
     const entries = lines.map(l => JSON.parse(l))
-    const recent = entries.slice(-10).reverse()
+    // Scrub PII (userAgent / referer / ip) from anything we expose publicly.
+    // Those fields exist in the on-disk log for our own analytics ~ they
+    // shouldn't go out over a public stats endpoint.
+    const recent = entries.slice(-10).reverse().map(e => ({
+      timestamp: e.timestamp,
+      paintName: e.paintName,
+      textures: e.textures,
+      bundleSize: e.bundleSize,
+    }))
     res.json({ totalBuilds: entries.length, recentBuilds: recent })
   } catch (err) {
     res.status(500).json({ error: 'Failed to read build log' })
