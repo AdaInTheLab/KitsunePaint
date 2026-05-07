@@ -39,9 +39,30 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Deploy dist/ to /var/www/paint.kitsuneden.net
+      - name: Deploy static dist/ to /var/www/paint.kitsuneden.net
         run: |
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/id_ed25519" \
             ./dist/ \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/paint.kitsuneden.net/
+
+      - name: Deploy server.cjs + scripts/ to /srv/kitsunepaint
+        run: |
+          rsync -avz \
+            -e "ssh -i ~/.ssh/id_ed25519" \
+            server.cjs package.json package-lock.json \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/srv/kitsunepaint/
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_ed25519" \
+            ./scripts/ \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/srv/kitsunepaint/scripts/
+
+      - name: Install production deps and restart service
+        run: |
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            'cd /srv/kitsunepaint && npm ci --omit=dev && sudo /usr/bin/systemctl restart kitsunepaint'
+
+      - name: Health check
+        run: |
+          sleep 3
+          curl -fsS https://paint.kitsuneden.net/api/stats || (echo "Health check failed"; exit 1)
