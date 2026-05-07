@@ -47,6 +47,17 @@ const buildLimiter = rateLimit({
       'Rate limit hit ~ max 50 bundle builds per hour. ' +
       'Try again in a bit, or batch your work differently.',
   },
+  // Log every 429 we issue so `journalctl -u kitsunepaint | grep rate-limit`
+  // surfaces blocked callers. Useful for spotting masonic-style bursts and
+  // for confirming the limiter is actually doing its job.
+  handler: (req, res, _next, options) => {
+    const ua = req.headers['user-agent'] || 'no-ua'
+    const ref = req.headers['referer'] || 'no-referer'
+    console.warn(
+      `[rate-limit] 429 for ip=${req.ip} ua="${ua}" referer="${ref}"`,
+    )
+    res.status(options.statusCode).json(options.message)
+  },
 })
 
 // Serve static frontend
