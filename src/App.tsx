@@ -6,6 +6,7 @@ import { PackMeta } from './components/PackMeta'
 import { buildModletZip } from './utils/buildModlet'
 import LandingPage from './pages/LandingPage'
 import TermsPage from './pages/TermsPage'
+import { BuildingModal } from './components/BuildingModal'
 import type { PaintEntry, PaintGroup } from './types'
 
 interface TextureFiles {
@@ -241,10 +242,12 @@ function AppTool() {
             <PackMeta packName={packName} packAuthor={packAuthor} onChange={handlePackMetaChange} />
             <button onClick={handleDownload} disabled={!canDownload || isBuilding}
               className={`w-full py-3 rounded-lg text-sm font-semibold transition-all duration-150 ${canDownload && !isBuilding ? 'bg-zinc-100 hover:bg-white text-zinc-950 cursor-pointer' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}>
-              {isBuilding ? buildProgress || 'Building modlet...' : canDownload ? `⬇ Download "${packName}" Modlet` : 'Add a pack name to download'}
+              {canDownload ? `⬇ Download "${packName}" Modlet` : 'Add a pack name to download'}
             </button>
           </div>
         )}
+
+        {isBuilding && <BuildingModal progress={buildProgress} />}
 
         <div className="border-t border-zinc-800/40 mt-8 pt-4 flex flex-col items-center gap-2">
           {buildCount !== null && buildCount > 0 && (
