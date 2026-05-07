@@ -45,7 +45,8 @@ const buildLimiter = rateLimit({
   message: {
     error:
       'Rate limit hit ~ max 50 bundle builds per hour. ' +
-      'Try again in a bit, or batch your work differently.',
+      'Try again in a bit, or grab the DIY kit and run the same compiler ' +
+      'locally with no caps: https://paint.kitsuneden.net/KitsunePaint-DIY-Kit.zip',
   },
   // Log every 429 we issue so `journalctl -u kitsunepaint | grep rate-limit`
   // surfaces blocked callers. Useful for spotting masonic-style bursts and
