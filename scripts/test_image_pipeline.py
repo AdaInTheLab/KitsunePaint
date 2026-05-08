@@ -49,12 +49,24 @@ BUILD_BUNDLE = SCRIPT_DIR / "build_bundle.py"
 TEMPLATE = SCRIPT_DIR / "Atlas.template.unity3d"
 OUT_DIR = SCRIPT_DIR / "_test_pipeline_output"
 
-# Colored corner stripes ~ pure RGB so float-rounding can't drift.
+# Colored edge stripes ~ pure RGB so float-rounding can't drift.
 TOP_COLOR    = (255,   0,   0)  # red
 BOTTOM_COLOR = (  0,   0, 255)  # blue
 LEFT_COLOR   = (  0, 255,   0)  # green
 RIGHT_COLOR  = (255, 255,   0)  # yellow
 STRIPE_FRAC  = 0.10  # fraction of edge depth painted
+
+# Distinct corner markers, drawn ON TOP of the stripes. Tests the third
+# leg of the May-2026 v1.0.1 bug report: "the frame is not displaying
+# correctly. Part of it is cut off." If pipeline truncation, mipmap
+# rounding, or DXT block alignment ever cuts pixels off the edges, the
+# corner markers go missing. 16 px squares survive DXT 4×4 block
+# compression cleanly.
+CORNER_TL = (255,   0, 255)  # magenta — top-left
+CORNER_TR = (  0, 255, 255)  # cyan    — top-right
+CORNER_BL = (255, 165,   0)  # orange  — bottom-left
+CORNER_BR = (255, 255, 255)  # white   — bottom-right
+CORNER_PX = 16
 
 # How close a pixel must be to the expected color to count as a match.
 COLOR_TOL = 32  # generous, since bundle compression is lossy
@@ -77,6 +89,15 @@ def make_landmark_image(w: int, h: int, exif_orientation: Optional[int] = None) 
     d.rectangle([0, h - sh, w, h], fill=BOTTOM_COLOR) # bottom
     d.rectangle([0, 0, sw, h], fill=LEFT_COLOR)       # left
     d.rectangle([w - sw, 0, w, h], fill=RIGHT_COLOR)  # right
+
+    # Corner markers ON TOP of edge stripes ~ proves no edge content gets
+    # cut off by the pipeline. Each marker is CORNER_PX×CORNER_PX so DXT
+    # 4×4 compression can't blur it away.
+    cp = CORNER_PX
+    d.rectangle([0,     0,     cp,    cp],    fill=CORNER_TL)
+    d.rectangle([w - cp, 0,    w,     cp],    fill=CORNER_TR)
+    d.rectangle([0,     h - cp, cp,   h],     fill=CORNER_BL)
+    d.rectangle([w - cp, h - cp, w,   h],     fill=CORNER_BR)
 
     if exif_orientation is None or exif_orientation == 1:
         return img
@@ -117,6 +138,24 @@ def sample_edges(img: Image.Image) -> dict:
         "bottom": avg_color(img, (cx - pad, h - pad * 2, cx + pad, h)),
         "left":   avg_color(img, (0,           cy - pad, pad * 2, cy + pad)),
         "right":  avg_color(img, (w - pad * 2, cy - pad, w,        cy + pad)),
+    }
+
+
+def sample_corners(img: Image.Image) -> dict:
+    """
+    Probe each corner of the output. The window is sized so it stays well
+    inside the corner marker even after resize from source dimensions to
+    the bundle's TARGET_SIZE (512). For a 1024×1024 source with 16-px
+    markers, after downscale to 512 the marker is 8 px ~ we sample the
+    inner 4 px to dodge anti-aliasing along the marker's outer edge.
+    """
+    w, h = img.size
+    win = 4  # tight inner window
+    return {
+        "top_left":     avg_color(img, (0,        0,        win,    win)),
+        "top_right":    avg_color(img, (w - win,  0,        w,      win)),
+        "bottom_left":  avg_color(img, (0,        h - win,  win,    h)),
+        "bottom_right": avg_color(img, (w - win,  h - win,  w,      h)),
     }
 
 
@@ -313,6 +352,31 @@ def main() -> int:
             details = " ".join(f"{k}={color_name(edges[k])}" for k in broken)
             print(f"   orient FAIL : {details}")
             failures.append(f"{case.name}: orientation broken on {','.join(broken)}")
+
+        # === Corner-preservation check ("part of it is cut off") ===
+        # Verifies that pixels at the absolute corners of the source still
+        # map to the corner markers in the output. If the pipeline truncates
+        # edges, downscales without preserving them, or the bundle compiler
+        # crops to a sub-region, the marker color goes missing.
+        corners = sample_corners(output)
+        corner_expected = {
+            "top_left":     CORNER_TL,
+            "top_right":    CORNER_TR,
+            "bottom_left":  CORNER_BL,
+            "bottom_right": CORNER_BR,
+        }
+        corner_results = {
+            k: color_close(corners[k], corner_expected[k]) for k in corner_expected
+        }
+        if all(corner_results.values()):
+            print(f"   corners OK  : all 4 markers preserved")
+        else:
+            broken = [k for k, v in corner_results.items() if not v]
+            details = " ".join(
+                f"{k}={corners[k]} (want {corner_expected[k]})" for k in broken
+            )
+            print(f"   corners FAIL: {details}")
+            failures.append(f"{case.name}: corner cut off at {','.join(broken)}")
 
     print()
     if failures:
