@@ -34,7 +34,7 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageOps
 import UnityPy
 
 SCRIPT_DIR = Path(__file__).parent
@@ -81,6 +81,27 @@ def resolve_pack_id(resources_dir: Path) -> str:
 
 
 def resize_to_512(img: Image.Image) -> Image.Image:
+    # Bug fix 1: honor JPEG EXIF Orientation tags. Phone-camera JPGs often
+    # carry orientation metadata (3 = 180°, 6 = 90° CW, 8 = 90° CCW). PIL
+    # doesn't auto-rotate; web previews do. Without this, those JPGs ship
+    # to the bundle upside-down or sideways. ImageOps.exif_transpose() applies
+    # the rotation and strips the tag.
+    img = ImageOps.exif_transpose(img)
+
+    # Bug fix 2: refuse to build non-square sources. 7DTD paint blocks render
+    # 1:1 on every wall face, so silently squashing a wide image to a square
+    # produces visibly distorted in-game art. The right answer for a wide or
+    # tall source is to use the grid-split feature on the web tool, which
+    # carves it into square tiles before submit. Hard error with a clear
+    # explanation here is more useful than a silently broken pack.
+    if img.size[0] != img.size[1]:
+        raise ValueError(
+            f"non-square source ({img.size[0]}×{img.size[1]}) cannot be packed "
+            f"into a 1:1 paint texture without distortion. "
+            f"Crop it square first, or use the grid-split feature on the web "
+            f"tool to slice it into matching square tiles before upload."
+        )
+
     if img.size != TARGET_SIZE:
         print(f"    Resizing from {img.size} to {TARGET_SIZE}")
         img = img.resize(TARGET_SIZE, Image.LANCZOS)

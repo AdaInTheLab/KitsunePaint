@@ -39,3 +39,7 @@ Thumbs.db
 scripts/extract_*.py
 scripts/probe_*.py
 scripts/list_*.py
+
+# Output of scripts/test_image_pipeline.py ~ regenerated each run, not meant
+# to be committed. Fixtures + extracted bundle outputs.
+scripts/_test_pipeline_output/
