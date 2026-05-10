@@ -113,7 +113,11 @@ app.post('/api/build-bundle', buildLimiter, upload.fields([
       // (buildModlet.ts) has already prefixed asset filenames with the pack ID
       // before uploading. A second prefix would produce double-prefixed paths.
       execFile(pythonCmd, ['-X', 'utf8', scriptPath, tempDir, templatePath, '--pack-id', ''], {
-        timeout: 30000,
+        // 120s — UnityPy bundle build on the ARM VPS can take 30-60s per
+        // texture for larger images. The previous 30s budget caused silent
+        // failures that made the client fall back to including raw PNGs
+        // instead of the .unity3d bundle (see buildModlet.ts catch path).
+        timeout: 120000,
       }, (error, stdout, stderr) => {
         if (error) {
           console.error('[build-bundle] Python error:', stderr || error.message)
