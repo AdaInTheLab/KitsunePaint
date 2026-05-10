@@ -293,6 +293,8 @@ export default function LandingPage() {
         <span className="text-xs text-zinc-700">
           <a href="/terms" className="hover:text-amber-500 transition-colors">Terms & Privacy</a>
           {' · '}
+          <a href="/changelog" className="hover:text-amber-500 transition-colors">v{__APP_VERSION__}</a>
+          {' · '}
           paint.kitsuneden.net
         </span>
       </footer>
