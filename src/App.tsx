@@ -6,6 +6,7 @@ import { PackMeta } from './components/PackMeta'
 import { buildModletZip } from './utils/buildModlet'
 import LandingPage from './pages/LandingPage'
 import TermsPage from './pages/TermsPage'
+import ChangelogPage from './pages/ChangelogPage'
 import { BuildingModal } from './components/BuildingModal'
 import type { PaintEntry, PaintGroup } from './types'
 
@@ -269,6 +270,10 @@ function AppTool() {
             <a href="/terms" className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
               Terms & Privacy
             </a>
+            <span className="text-xs text-zinc-800">|</span>
+            <a href="/changelog" className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
+              v{__APP_VERSION__}
+            </a>
           </div>
         </div>
       </main>
@@ -280,5 +285,6 @@ export default function App() {
   const path = window.location.pathname
   if (path === '/app') return <AppTool />
   if (path === '/terms') return <TermsPage />
+  if (path === '/changelog') return <ChangelogPage />
   return <LandingPage />
 }
