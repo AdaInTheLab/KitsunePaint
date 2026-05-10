@@ -114,6 +114,48 @@ ${paintList}
 `
 }
 
+/**
+ * Per-tile texture cap. 7DTD paints map to a single block face ~ once the
+ * texture is on the wall, anything past ~1024px doesn't visibly improve.
+ * 2048 keeps headroom for users who care about up-close detail in multi-
+ * block scenes, while still keeping bundle sizes (and ARM-side UnityPy
+ * build time) reasonable. Applies to each individual tile, so a 2x2 grid
+ * can still source a 4096-wide image and end up with 4x 2048 tiles.
+ */
+const MAX_TEXTURE_PX = 2048
+
+/**
+ * Downscale a PNG file to fit within MAX_TEXTURE_PX on either axis,
+ * preserving aspect ratio. No-op if the image is already small enough.
+ * Returns a new File with the same name + type.
+ */
+async function downscaleIfOversized(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file)
+  const { width, height } = bitmap
+  if (width <= MAX_TEXTURE_PX && height <= MAX_TEXTURE_PX) {
+    bitmap.close()
+    return file
+  }
+
+  const scale = MAX_TEXTURE_PX / Math.max(width, height)
+  const newW = Math.round(width * scale)
+  const newH = Math.round(height * scale)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = newW
+  canvas.height = newH
+  const ctx = canvas.getContext('2d')!
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(bitmap, 0, 0, newW, newH)
+  bitmap.close()
+
+  const blob = await new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b!), 'image/png'),
+  )
+  return new File([blob], file.name, { type: 'image/png' })
+}
+
 async function sliceImage(file: File, gridW: number, gridH: number): Promise<File[]> {
   const bitmap = await createImageBitmap(file)
   const tileW = Math.floor(bitmap.width / gridW)
@@ -189,11 +231,19 @@ export async function buildModletZip(
       if (tileCount === 1) {
         const bundleName = `Atlas_${String(bundleIndex + 1).padStart(3, '0')}.unity3d`
         const assetName = `${packId}_${baseName}`
-        const bundleData = await buildBundle(assetName, paint.textures.diffuse, paint.textures.normal, paint.textures.specular)
+        // Cap each channel to MAX_TEXTURE_PX before upload. 7DTD maps a
+        // single block face per paint, so anything past ~1024-2048px is
+        // wasted bytes + slower server-side bundle build.
+        const diffuse = await downscaleIfOversized(paint.textures.diffuse)
+        const normal = paint.textures.normal ? await downscaleIfOversized(paint.textures.normal) : undefined
+        const specular = paint.textures.specular ? await downscaleIfOversized(paint.textures.specular) : undefined
+        const bundleData = await buildBundle(assetName, diffuse, normal, specular)
         resources.file(bundleName, bundleData)
         bundleIndex++
       } else {
-        // Slice each channel into tiles
+        // Slice each channel into tiles, then cap each tile. Capping AFTER
+        // slicing means a 4096-source 2x2 grid produces 4x 2048 tiles,
+        // preserving the user's intended detail across the multi-block scene.
         const diffuseTiles = await sliceImage(paint.textures.diffuse, gw, gh)
         const normalTiles = paint.textures.normal ? await sliceImage(paint.textures.normal, gw, gh) : []
         const specularTiles = paint.textures.specular ? await sliceImage(paint.textures.specular, gw, gh) : []
@@ -204,7 +254,10 @@ export async function buildModletZip(
           const tileName = `${baseName}_${x}_${y}`
           const bundleName = `Atlas_${String(bundleIndex + 1).padStart(3, '0')}.unity3d`
           const assetName = `${packId}_${tileName}`
-          const bundleData = await buildBundle(assetName, diffuseTiles[ti], normalTiles[ti], specularTiles[ti])
+          const diffuse = await downscaleIfOversized(diffuseTiles[ti])
+          const normal = normalTiles[ti] ? await downscaleIfOversized(normalTiles[ti]) : undefined
+          const specular = specularTiles[ti] ? await downscaleIfOversized(specularTiles[ti]) : undefined
+          const bundleData = await buildBundle(assetName, diffuse, normal, specular)
           resources.file(bundleName, bundleData)
           bundleIndex++
         }
