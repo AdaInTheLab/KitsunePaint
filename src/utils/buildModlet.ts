@@ -210,15 +210,14 @@ export async function buildModletZip(
         }
       }
     } catch (err) {
+      // Hard fail — we used to silently include the raw PNGs as a fallback,
+      // but that produced broken modpacks (the game expects .unity3d bundles
+      // referenced by painting.xml). Better to surface the error so the user
+      // can retry rather than ship them a pack that won't load in-game.
       console.error(`Failed to build bundle for ${paint.name}:`, err)
-      resources.file(`${packId}_${baseName}_diffuse.png`, await paint.textures.diffuse.arrayBuffer())
-      if (paint.textures.normal) {
-        resources.file(`${packId}_${baseName}_normal.png`, await paint.textures.normal.arrayBuffer())
-      }
-      if (paint.textures.specular) {
-        resources.file(`${packId}_${baseName}_specular.png`, await paint.textures.specular.arrayBuffer())
-      }
-      bundleIndex += tileCount
+      throw new Error(
+        `Couldn't build the bundle for "${paint.name}". The server may be busy ~ please try again in a moment. (${err instanceof Error ? err.message : 'unknown error'})`
+      )
     }
   }
 
