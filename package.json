@@ -1,7 +1,7 @@
 {
   "name": "kitsunepaint",
   "private": true,
-  "version": "1.5.5",
+  "version": "1.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,8 @@
     "jszip": "^3.10.1",
     "multer": "^2.1.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-easy-crop": "^5.5.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

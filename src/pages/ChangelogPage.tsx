@@ -10,6 +10,14 @@ type Release = { version: string; date: string; changes: Change[] }
 
 const RELEASES: Release[] = [
   {
+    version: '1.6.0',
+    date: 'May 2026',
+    changes: [
+      { type: 'added', text: 'Crop tool for non-square uploads! Drop in any image and a friendly cropper pops up so you can pick the 1:1 region you want, instead of getting an error.' },
+      { type: 'improved', text: 'Server error messages are now parsed for the human-readable part. No more raw Python tracebacks if a build fails.' },
+    ],
+  },
+  {
     version: '1.5.5',
     date: 'May 2026',
     changes: [
