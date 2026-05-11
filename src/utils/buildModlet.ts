@@ -179,6 +179,26 @@ async function sliceImage(file: File, gridW: number, gridH: number): Promise<Fil
   return tiles
 }
 
+/**
+ * Pulls a human-readable summary out of the server's error response.
+ * The Python script raises ValueError with a clear message, but the full
+ * response is wrapped in a Python traceback that makes for terrible UX.
+ * This extracts just the relevant message for known cases.
+ */
+function summarizeServerError(raw: string): string {
+  // ValueError: <message>  — extract the message after the last ValueError
+  const valueErrorMatch = raw.match(/ValueError:\s*([^\n]+)/i)
+  if (valueErrorMatch) return valueErrorMatch[1].trim()
+
+  // FileNotFoundError, etc — generic Python error pattern
+  const pyErrorMatch = raw.match(/(\w+Error):\s*([^\n]+)/i)
+  if (pyErrorMatch) return `${pyErrorMatch[1]}: ${pyErrorMatch[2].trim()}`
+
+  // Otherwise return first ~200 chars stripped of the traceback prefix
+  const firstLine = raw.split('\n').find(l => l.trim() && !l.startsWith('  '))
+  return (firstLine || raw).slice(0, 200)
+}
+
 async function buildBundle(name: string, diffuse: File, normal?: File, specular?: File): Promise<ArrayBuffer> {
   const formData = new FormData()
   formData.append('name', name)
@@ -193,7 +213,7 @@ async function buildBundle(name: string, diffuse: File, normal?: File, specular?
   const res = await fetch('/api/build-bundle', { method: 'POST', body: formData })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(`Bundle build failed for ${name}: ${err.error}`)
+    throw new Error(summarizeServerError(err.error || res.statusText))
   }
   return res.arrayBuffer()
 }
