@@ -23,13 +23,71 @@ const PORT = process.env.PORT || 3002
 // as the same IP (i.e. instantly block everyone).
 app.set('trust proxy', 'loopback')
 
-// CORS for cross-port requests (Apache on 80/443, Express on 3002)
+/**
+ * Origins allowed to call the API. Same-origin requests (browser hitting
+ * /api/* on the same host that served the page) don't actually need CORS,
+ * but we include the prod domain so iframes/embeds from elsewhere on the
+ * Kitsune Den ecosystem still work, and localhost for dev.
+ *
+ * Add new entries here; everything else gets blocked.
+ */
+const ALLOWED_ORIGINS = new Set([
+  'https://paint.kitsuneden.net',
+  'http://localhost:5173',
+  'http://localhost:3002',
+])
+
+/**
+ * Returns true if the request's Origin header (or, for non-preflight POSTs,
+ * the Referer's origin) is in the allow-list. Used both to gate write
+ * endpoints and to decide whether to send CORS-allow headers back.
+ *
+ * Note: this only stops *browser-based* abuse (other sites embedding our
+ * API in their JS). It does NOT stop direct curl/Python hits ~ those are
+ * handled by the rate limiter further down. Real auth would require
+ * tokens, which is overkill for a free public tool.
+ */
+function isAllowedOrigin(req) {
+  const origin = req.headers.origin
+  if (origin) return ALLOWED_ORIGINS.has(origin)
+
+  // Some same-origin POSTs don't send Origin. Fall back to Referer.
+  const referer = req.headers.referer
+  if (referer) {
+    try {
+      return ALLOWED_ORIGINS.has(new URL(referer).origin)
+    } catch (_) { /* malformed referer */ }
+  }
+  return false
+}
+
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-  res.header('Access-Control-Allow-Headers', 'Content-Type')
-  if (req.method === 'OPTIONS') return res.sendStatus(200)
+  const origin = req.headers.origin
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    // Echo back the specific origin (not '*'). Required when also
+    // sending Access-Control-Allow-Credentials, and just generally a
+    // tighter contract than the wildcard.
+    res.header('Access-Control-Allow-Origin', origin)
+    res.header('Vary', 'Origin')
+    res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+    res.header('Access-Control-Allow-Headers', 'Content-Type')
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
   next()
+})
+
+/**
+ * Hard-block POST traffic that doesn't claim to come from an allowed
+ * origin. CORS alone only stops browsers; this also stops curl/scripts
+ * that forget to spoof an Origin header. Real attackers can still spoof
+ * the header, but combined with the rate limiter it raises the floor.
+ */
+app.use((req, res, next) => {
+  if (req.method !== 'POST') return next()
+  if (isAllowedOrigin(req)) return next()
+  return res.status(403).json({
+    error: 'This API only accepts requests from paint.kitsuneden.net. If you want to build packs offline, grab the free DIY kit from the landing page. For paid whitelisted API access, email adainthelab@gmail.com.',
+  })
 })
 
 // Rate limiter for the bundle build endpoint. Each Python subprocess takes
