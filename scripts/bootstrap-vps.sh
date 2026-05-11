@@ -73,6 +73,18 @@ visudo -c -f /etc/sudoers.d/deploy-services > /dev/null
 # --- systemd units ----------------------------------------------------------
 echo "[8/8] systemd units + Caddyfile"
 
+# Generate a one-time API key salt if not already present. This salt is
+# used to hash all API keys; rotating it would invalidate every existing
+# customer key, so we store it permanently in /etc/default/kitsunepaint.
+SALT_FILE=/etc/default/kitsunepaint
+if [ ! -f "$SALT_FILE" ] || ! grep -q '^API_KEY_SALT=' "$SALT_FILE"; then
+  GENERATED_SALT=$(openssl rand -hex 32)
+  echo "API_KEY_SALT=$GENERATED_SALT" >> "$SALT_FILE"
+  chmod 640 "$SALT_FILE"
+  chown root:deploy "$SALT_FILE"
+  echo "  generated API_KEY_SALT (stored in $SALT_FILE)"
+fi
+
 cat > /etc/systemd/system/kitsunepaint.service <<'EOF'
 [Unit]
 Description=KitsunePaint Express API
@@ -83,6 +95,7 @@ Type=simple
 User=deploy
 Group=deploy
 WorkingDirectory=/srv/kitsunepaint
+EnvironmentFile=/etc/default/kitsunepaint
 Environment=NODE_ENV=production
 Environment=PORT=3002
 ExecStart=/usr/bin/node server.cjs

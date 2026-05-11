@@ -76,14 +76,47 @@ app.use((req, res, next) => {
   next()
 })
 
+// API key auth ~ valid X-API-Key bypasses the Origin check below. See
+// auth.cjs for the hash/lookup logic and scripts/manage-keys.cjs for
+// the admin CLI.
+const auth = require('./auth.cjs')
+
 /**
- * Hard-block POST traffic that doesn't claim to come from an allowed
- * origin. CORS alone only stops browsers; this also stops curl/scripts
- * that forget to spoof an Origin header. Real attackers can still spoof
- * the header, but combined with the rate limiter it raises the floor.
+ * Hard-block POST traffic that:
+ *   1. has no valid X-API-Key, AND
+ *   2. doesn't claim to come from an allowed origin
+ *
+ * API key path is for paid integrators ~ they get past the Origin check
+ * because they paid for non-browser access (server-to-server, custom
+ * tooling, etc). The Origin path covers our own frontend at
+ * paint.kitsuneden.net plus localhost dev.
+ *
+ * CORS alone only stops browsers; the Origin check also stops curl/
+ * scripts that forget to spoof a header. Spoofing the Origin header
+ * is trivial, but combined with the rate limiter it raises the floor
+ * on casual abuse. For unspoofable access, customers use API keys.
  */
 app.use((req, res, next) => {
   if (req.method !== 'POST') return next()
+
+  // Try API key first
+  const apiKey = req.headers['x-api-key']
+  if (apiKey) {
+    const match = auth.verifyKey(apiKey)
+    if (match) {
+      auth.touchLastUsed(match.label)
+      // Tag the request so endpoints can log/meter per customer if needed
+      req.apiKeyLabel = match.label
+      return next()
+    }
+    // Header was provided but didn't match ~ explicit 401, NOT 403,
+    // so callers can distinguish "your key is bad" from "you have no key"
+    return res.status(401).json({
+      error: 'Invalid X-API-Key. If your key was revoked or rotated, email adainthelab@gmail.com.',
+    })
+  }
+
+  // No API key ~ fall back to Origin check
   if (isAllowedOrigin(req)) return next()
   return res.status(403).json({
     error: 'This API only accepts requests from paint.kitsuneden.net. If you want to build packs offline, grab the free DIY kit from the landing page. For paid whitelisted API access, email adainthelab@gmail.com.',
