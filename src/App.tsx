@@ -7,6 +7,7 @@ import { buildModletZip } from './utils/buildModlet'
 import LandingPage from './pages/LandingPage'
 import TermsPage from './pages/TermsPage'
 import ChangelogPage from './pages/ChangelogPage'
+import PricingPage from './pages/PricingPage'
 import { BuildingModal } from './components/BuildingModal'
 import { ErrorDialog } from './components/ErrorDialog'
 import { toFriendlyError, type FriendlyError } from './utils/friendlyError'
@@ -277,6 +278,10 @@ function AppTool() {
               Terms & Privacy
             </a>
             <span className="text-xs text-zinc-800">|</span>
+            <a href="/pricing" className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
+              API Pricing
+            </a>
+            <span className="text-xs text-zinc-800">|</span>
             <a href="/changelog" className="text-xs text-zinc-600 hover:text-amber-500 transition-colors">
               v{__APP_VERSION__}
             </a>
@@ -292,5 +297,6 @@ export default function App() {
   if (path === '/app') return <AppTool />
   if (path === '/terms') return <TermsPage />
   if (path === '/changelog') return <ChangelogPage />
+  if (path === '/pricing') return <PricingPage />
   return <LandingPage />
 }
