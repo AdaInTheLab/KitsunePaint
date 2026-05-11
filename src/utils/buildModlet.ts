@@ -241,7 +241,10 @@ export async function buildModletZip(
     const gw = paint.gridWidth ?? 1
     const gh = paint.gridHeight ?? 1
     const tileCount = gw * gh
-    onProgress?.(i + 1, config.paints.length, paint.name)
+    // Pass the COMPLETED count, not (i+1). The previous +1 made the bar
+    // jump to 100% the moment the last paint started building, which felt
+    // broken/stuck. Now the bar moves up as each paint actually finishes.
+    onProgress?.(i, config.paints.length, paint.name)
 
     try {
       // Bundle internal asset paths must be globally unique across paint

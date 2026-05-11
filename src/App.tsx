@@ -8,6 +8,8 @@ import LandingPage from './pages/LandingPage'
 import TermsPage from './pages/TermsPage'
 import ChangelogPage from './pages/ChangelogPage'
 import { BuildingModal } from './components/BuildingModal'
+import { ErrorDialog } from './components/ErrorDialog'
+import { toFriendlyError, type FriendlyError } from './utils/friendlyError'
 import type { PaintEntry, PaintGroup } from './types'
 
 interface TextureFiles {
@@ -35,6 +37,7 @@ function AppTool() {
   const [packAuthor, setPackAuthor] = useState('')
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildProgress, setBuildProgress] = useState('')
+  const [buildError, setBuildError] = useState<FriendlyError | null>(null)
   const [buildCount, setBuildCount] = useState<number | null>(null)
 
   useEffect(() => {
@@ -136,8 +139,10 @@ function AppTool() {
       URL.revokeObjectURL(url)
       setBuildCount(prev => prev !== null ? prev + 1 : 1)
     } catch (err) {
+      // Full technical details to the dev console; nicely formatted version
+      // to the user. See utils/friendlyError.ts for the mapping.
       console.error('Build failed:', err)
-      setBuildProgress(`Error: ${err instanceof Error ? err.message : 'Build failed'}`)
+      setBuildError(toFriendlyError(err))
       return
     } finally {
       setIsBuilding(false)
@@ -249,6 +254,7 @@ function AppTool() {
         )}
 
         {isBuilding && <BuildingModal progress={buildProgress} />}
+        {buildError && <ErrorDialog error={buildError} onClose={() => setBuildError(null)} />}
 
         <div className="border-t border-zinc-800/40 mt-8 pt-4 flex flex-col items-center gap-2">
           {buildCount !== null && buildCount > 0 && (

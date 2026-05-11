@@ -10,6 +10,15 @@ type Release = { version: string; date: string; changes: Change[] }
 
 const RELEASES: Release[] = [
   {
+    version: '1.6.1',
+    date: 'May 2026',
+    changes: [
+      { type: 'fixed', text: 'Progress bar was jumping straight to 100% when the last paint started building, then sitting there. Now it actually tracks completion.' },
+      { type: 'improved', text: 'Build errors now show a friendly dialog with a clear explanation instead of a Python traceback dumped into the modal. Full technical details still go to the dev console.' },
+      { type: 'fixed', text: 'Long paint names in the Paint Pack tray now wrap to 2 lines instead of being cut off at "enchanted fo..."' },
+    ],
+  },
+  {
     version: '1.6.0',
     date: 'May 2026',
     changes: [
