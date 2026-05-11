@@ -48,9 +48,20 @@ export function PaintTray({ paints, onRemove, onSelect, selectedId }: PaintTrayP
               )}
             </div>
 
-            {/* Name */}
-            <div className="px-2 pb-2">
-              <p className="text-xs text-zinc-300 truncate max-w-[80px] leading-tight">
+            {/* Name. Two-line clamp avoids the previous "enchanted fo..." truncation
+                while still capping vertical growth. Full name in title tooltip for
+                anyone curious about what got clipped. */}
+            <div className="px-2 pb-2 max-w-[80px]">
+              <p
+                className="text-xs text-zinc-300 leading-tight overflow-hidden"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  wordBreak: 'break-word',
+                }}
+                title={paint.name || 'Unnamed'}
+              >
                 {paint.name || 'Unnamed'}
               </p>
               <p className="text-[10px] text-zinc-600 capitalize">{paint.group}</p>
