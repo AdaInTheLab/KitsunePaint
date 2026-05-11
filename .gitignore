@@ -43,3 +43,8 @@ scripts/list_*.py
 # Output of scripts/test_image_pipeline.py ~ regenerated each run, not meant
 # to be committed. Fixtures + extracted bundle outputs.
 scripts/_test_pipeline_output/
+
+# API key hashes ~ produced on the VPS by scripts/manage-keys.cjs.
+# Contains hashed customer keys; should never live in source control.
+data/api-keys.json
+data/api-keys.json.tmp
