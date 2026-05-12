@@ -50,7 +50,7 @@ jobs:
         run: |
           rsync -avz \
             -e "ssh -i ~/.ssh/id_ed25519" \
-            server.cjs auth.cjs package.json package-lock.json \
+            server.cjs auth.cjs audit.cjs package.json package-lock.json \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/srv/kitsunepaint/
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/id_ed25519" \
