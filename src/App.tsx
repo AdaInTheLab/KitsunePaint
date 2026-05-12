@@ -230,6 +230,23 @@ function AppTool() {
                     <span className="text-[10px] text-amber-400">{gridWidth * gridHeight} tiles</span>
                   )}
                 </div>
+                {/* Aspect hint: helps users understand which source shape this
+                    grid wants. Mismatched aspect still works (we center-crop
+                    each tile to square) but loses pixels on the long axis. */}
+                {(gridWidth > 1 || gridHeight > 1) && (
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    💡 Best with a{' '}
+                    <span className="text-amber-400/80">
+                      {gridWidth === gridHeight
+                        ? 'square'
+                        : gridWidth > gridHeight
+                          ? `${gridWidth}:${gridHeight} horizontal`
+                          : `${gridWidth}:${gridHeight} vertical`}
+                    </span>{' '}
+                    source (e.g. {gridWidth * 512}×{gridHeight * 512}). Other shapes
+                    work too ~ each tile gets center-cropped to square.
+                  </p>
+                )}
               </div>
               <button onClick={handleAddToPack} disabled={!canAdd}
                 className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 ${canAdd ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 cursor-pointer' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}>
