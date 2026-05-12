@@ -81,6 +81,27 @@ app.use((req, res, next) => {
 // the admin CLI.
 const auth = require('./auth.cjs')
 
+// Audit logging + spoof detection. Mounts BEFORE the auth middleware so we
+// capture blocked requests (the most interesting ones for spoof analysis).
+// See audit.cjs for heuristic details.
+const audit = require('./audit.cjs')
+
+app.use(
+  audit.middleware({
+    allowedOrigins: ALLOWED_ORIGINS,
+    getResult: (req, res) => {
+      if (req.method !== 'POST') return 'noop'
+      if (req.apiKeyLabel) return 'allowed-key'
+      if (res.statusCode === 401) return 'blocked-key'
+      if (res.statusCode === 403) return 'blocked-origin'
+      if (res.statusCode === 429) return 'rate-limited'
+      if (res.statusCode >= 500) return 'error'
+      if (res.statusCode >= 200 && res.statusCode < 300) return 'allowed'
+      return `status-${res.statusCode}`
+    },
+  }),
+)
+
 /**
  * Hard-block POST traffic that:
  *   1. has no valid X-API-Key, AND
@@ -290,6 +311,48 @@ app.get('/api/stats', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Failed to read build log' })
   }
+})
+
+/**
+ * Admin-only endpoints. Gated by X-API-Key whose label matches "admin".
+ * Create with: node scripts/manage-keys.cjs add admin
+ *
+ * Note: only ONE admin key is ever active at a time (the manage-keys CLI
+ * rejects duplicate labels). To rotate: revoke "admin", then add a new
+ * one ~ Ada keeps the latest plaintext in her password manager.
+ */
+function requireAdmin(req, res, next) {
+  const apiKey = req.headers['x-api-key']
+  const match = apiKey && auth.verifyKey(apiKey)
+  if (!match || match.label !== 'admin') {
+    return res.status(403).json({ error: 'admin api key required' })
+  }
+  next()
+}
+
+/**
+ * GET /api/_admin/spoof-stats
+ *
+ * Aggregate stats over the in-memory audit buffer (last ~2000 requests).
+ * Use this to spot if anyone's actively trying to spoof the Origin
+ * check (claims paint.kitsuneden.net but no browser fingerprint).
+ *
+ * Optional ?windowMinutes=60 (default 1440 = 24h).
+ */
+app.get('/api/_admin/spoof-stats', requireAdmin, (req, res) => {
+  const minutes = Math.max(1, parseInt(req.query.windowMinutes, 10) || 1440)
+  res.json(audit.summarize(minutes * 60 * 1000))
+})
+
+/**
+ * GET /api/_admin/recent-spoofs
+ *
+ * Full request detail for the most recent suspicious requests.
+ * Useful for "what was that spoofer trying to do" investigation.
+ */
+app.get('/api/_admin/recent-spoofs', requireAdmin, (req, res) => {
+  const limit = Math.max(1, Math.min(200, parseInt(req.query.limit, 10) || 50))
+  res.json({ entries: audit.recentSpoofs(limit) })
 })
 
 // SPA fallback — serve index.html for all non-API routes (Express 5 syntax)
