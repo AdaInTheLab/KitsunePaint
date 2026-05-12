@@ -156,6 +156,46 @@ async function downscaleIfOversized(file: File): Promise<File> {
   return new File([blob], file.name, { type: 'image/png' })
 }
 
+/**
+ * Center-crop a File to a 1:1 square at min(width, height). No-op if
+ * already square. Used both for single-block uploads and per-tile in
+ * the slicer ~ the build pipeline only ever sends square textures to
+ * the bundle endpoint (server-side resize_to_512 still rejects non-
+ * square as a backstop, but should never see one in practice).
+ */
+async function centerCropToSquare(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file)
+  if (bitmap.width === bitmap.height) {
+    bitmap.close()
+    return file
+  }
+  const size = Math.min(bitmap.width, bitmap.height)
+  const sx = Math.floor((bitmap.width - size) / 2)
+  const sy = Math.floor((bitmap.height - size) / 2)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(bitmap, sx, sy, size, size, 0, 0, size, size)
+  bitmap.close()
+
+  const blob = await new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b!), 'image/png'),
+  )
+  return new File([blob], file.name, { type: 'image/png' })
+}
+
+/**
+ * Slice a source image into gridW x gridH tiles. Each tile is then
+ * center-cropped to square so the bundle build always gets 1:1 input.
+ *
+ * Math note: tileW/tileH are computed from the source dimensions and
+ * may not be equal. The center-crop step inside the loop fixes that ~
+ * a 1024x256 source with a 4x1 grid yields 4x 256x256 tiles (full
+ * coverage), and a 1440x1080 source with a 2x2 grid yields 4x 540x540
+ * tiles (with the long-axis edges trimmed). Both feel right.
+ */
 async function sliceImage(file: File, gridW: number, gridH: number): Promise<File[]> {
   const bitmap = await createImageBitmap(file)
   const tileW = Math.floor(bitmap.width / gridW)
@@ -172,7 +212,10 @@ async function sliceImage(file: File, gridW: number, gridH: number): Promise<Fil
       ctx.drawImage(bitmap, x * tileW, y * tileH, tileW, tileH, 0, 0, tileW, tileH)
       const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'))
       const stem = file.name.replace(/\.[^/.]+$/, '').replace(/[_\-.]*(diffuse|normal|specular)$/i, '')
-      tiles.push(new File([blob], `${stem}_${x}_${y}.png`, { type: 'image/png' }))
+      const rawTile = new File([blob], `${stem}_${x}_${y}.png`, { type: 'image/png' })
+      // Each tile may be non-square (e.g. 720x540 from a 1440x1080 / 2x2).
+      // Center-crop here so downstream only ever sees 1:1 textures.
+      tiles.push(await centerCropToSquare(rawTile))
     }
   }
   bitmap.close()
@@ -254,12 +297,17 @@ export async function buildModletZip(
       if (tileCount === 1) {
         const bundleName = `Atlas_${String(bundleIndex + 1).padStart(3, '0')}.unity3d`
         const assetName = `${packId}_${baseName}`
-        // Cap each channel to MAX_TEXTURE_PX before upload. 7DTD maps a
-        // single block face per paint, so anything past ~1024-2048px is
-        // wasted bytes + slower server-side bundle build.
-        const diffuse = await downscaleIfOversized(paint.textures.diffuse)
-        const normal = paint.textures.normal ? await downscaleIfOversized(paint.textures.normal) : undefined
-        const specular = paint.textures.specular ? await downscaleIfOversized(paint.textures.specular) : undefined
+        // For single-block paints we silently center-crop to square ~ the
+        // upload UI no longer enforces 1:1 (was getting in the way of the
+        // multi-block grid feature), so we handle non-square here. Then
+        // cap to MAX_TEXTURE_PX before upload to keep bundle size sane.
+        const diffuse = await downscaleIfOversized(await centerCropToSquare(paint.textures.diffuse))
+        const normal = paint.textures.normal
+          ? await downscaleIfOversized(await centerCropToSquare(paint.textures.normal))
+          : undefined
+        const specular = paint.textures.specular
+          ? await downscaleIfOversized(await centerCropToSquare(paint.textures.specular))
+          : undefined
         const bundleData = await buildBundle(assetName, diffuse, normal, specular)
         resources.file(bundleName, bundleData)
         bundleIndex++

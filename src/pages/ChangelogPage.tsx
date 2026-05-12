@@ -10,6 +10,15 @@ type Release = { version: string; date: string; changes: Change[] }
 
 const RELEASES: Release[] = [
   {
+    version: '1.6.2',
+    date: 'May 2026',
+    changes: [
+      { type: 'fixed', text: 'The auto-cropper was getting in the way of the multi-block grid feature ~ if you had a 1024x256 strip you wanted sliced into 4x1, the cropper kept asking you to make it square first. Removed.' },
+      { type: 'improved', text: 'The build pipeline now handles non-square sources automatically: single-block paints get a silent center-crop, multi-block grids slice and then center-crop each tile to square.' },
+      { type: 'added', text: 'Aspect hint near the Block Span selector ~ tells you which source shape works best for the grid you picked (e.g. "Best with a 1:3 vertical source").' },
+    ],
+  },
+  {
     version: '1.6.1',
     date: 'May 2026',
     changes: [
